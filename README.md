@@ -1,2 +1,3 @@
-# advent-of-code-2023
-Advent of Code puzzles for 2023
+# 2023 Advent of Code Puzzles
+
+Repository contains puzzle solves for [Advent of Code: 2023](https://adventofcode.com/2023)
