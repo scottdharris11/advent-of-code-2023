@@ -15,9 +15,9 @@ part1_sample = [
 ]
 
 value = solve_part1(part1_sample)
-assert(value == 0)
+assert(value == -1)
 value = solve_part1(read_lines("input/day2-input.txt"))
-assert(value == 0)
+assert(value == -1)
 
 # Part 2
 part2_sample = [
@@ -25,6 +25,6 @@ part2_sample = [
 ]
 
 value = solve_part2(part2_sample)
-assert(value == 0)
+assert(value == -1)
 value = solve_part2(read_lines("input/day2-input.txt"))
-assert(value == 0)
+assert(value == -1)
