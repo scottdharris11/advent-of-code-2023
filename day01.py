@@ -65,16 +65,16 @@ def solve_part1_re(lines: list):
 
 @Runner("Day 1", "Part 2")
 def solve_part2_re(lines: list):
-    regex = re.compile("([0-9]{1}|one|two|three|four|five|six|seven|eight|nine)")
+    regex = re.compile("(?=([0-9]|one|two|three|four|five|six|seven|eight|nine))")
     total = 0
     for line in lines:
         total += regex_solve(regex, line)
     return total
 
 def regex_solve(regex: Pattern, line: str):
-    matches = tuple(regex.finditer(line))
-    first = digit(matches[0].group())
-    last = digit(matches[len(matches)-1].group())
+    matches = tuple(regex.findall(line))
+    first = digit(matches[0])
+    last = digit(matches[len(matches)-1])
     return int("".join([first, last]))
 
 def digit(s: str):
