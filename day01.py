@@ -8,7 +8,7 @@ def solve_part1(lines: list):
         first = -1
         last = -1
         for c in line:
-            if str(c).isdigit():
+            if c.isdigit():
                 if first == -1:
                     first = c
                     last = first
@@ -53,15 +53,19 @@ def solve_part2(lines: list):
         total += int("%s%s" % (first, last))
     return total
 
-solve_part1([
+# Part 1
+value = solve_part1([
     "1abc2",
     "pqr3stu8vwx",
     "a1b2c3d4e5f",
     "treb7uchet",
 ])
-solve_part1(read_lines("input/day1-input.txt"))
+assert(value == 142)
+value = solve_part1(read_lines("input/day1-input.txt"))
+assert(value == 54331)
 
-solve_part2([
+# Part 2
+value = solve_part2([
     "two1nine",
     "eightwothree",
     "abcone2threexyz",
@@ -70,5 +74,7 @@ solve_part2([
     "zoneight234",
     "7pqrstsixteen",
 ])
-solve_part2(read_lines("input/day1-input.txt"))
+assert(value == 281)
+value = solve_part2(read_lines("input/day1-input.txt"))
+assert(value == 54518)
 
