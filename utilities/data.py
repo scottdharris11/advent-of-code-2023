@@ -8,6 +8,10 @@ def read_lines(filename):
 
 """parse set of integers from line delimited by seperator"""
 def parse_integers(line: str, seperator):
+    """
+    >>> parse_integers("10, 32, 44", ",")
+    [10, 32, 44]
+    """
     svalues = line.split(seperator)
     values = []
     for s in svalues:
@@ -16,6 +20,10 @@ def parse_integers(line: str, seperator):
 
 """parse a grid of integers from the supplied lines"""
 def parse_integer_grid(lines: list):
+    """
+    >>> parse_integer_grid(["1 3 5", "7 9 0", "3 2 6"])
+    [[1, 3, 5], [7, 9, 0], [3, 2, 6]]
+    """
     grid = []
     for l in lines:
         grid.append(parse_integers(l, " "))
