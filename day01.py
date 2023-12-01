@@ -57,7 +57,7 @@ def solve_part2(lines: list):
 
 @Runner("Day 1", "Part 1")
 def solve_part1_re(lines: list):
-    regex = re.compile("([0-9]{1})")
+    regex = re.compile("([0-9])")
     total = 0
     for line in lines:
         total += regex_solve(regex, line)
