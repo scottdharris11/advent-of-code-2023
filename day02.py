@@ -20,17 +20,17 @@ def solve_part2(lines: list):
     return total
 
 def parse_game(line: str):
-    idStart = line.index(" ")
-    idEnd = line.index(":")
-    id = int(line[idStart+1:idEnd])
+    start = line.index(" ")
+    end = line.index(":")
+    id = int(line[start+1:end])
     game = Game(id)
     
-    sets = line[idEnd+1:].split(";")
+    sets = line[end+1:].split(";")
     for set in sets:
         cubes = set.split(",")
         for cube in cubes:
             c = cube.strip().split(" ")
-            game.cubesShown(c[1], int(c[0]))
+            game.show(c[1], int(c[0]))
     
     return game
     
@@ -39,7 +39,7 @@ class Game:
         self.id = id
         self.max_cubes = {}
     
-    def cubesShown(self, color, count):
+    def show(self, color, count):
         if self.max_cubes.get(color, 0) < count:
             self.max_cubes[color] = count
     
