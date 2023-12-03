@@ -16,11 +16,11 @@ def solve_part2(lines: list):
     line_index = -1
     for line in lines:
         line_index += 1
-        idx = -1
+        char_index = -1
         for c in line:
-            idx += 1
+            char_index += 1
             if c == '*':
-                total += gear_ratio(parts, line_index, idx)
+                total += gear_ratio(parts, line_index, char_index)
     return total
 
 def locate_parts(lines: list):
@@ -30,13 +30,13 @@ def locate_parts(lines: list):
         line_index += 1
         begin = -1
         end = -1
-        idx = -1
+        char_index = -1
         for c in line:
-            idx += 1
+            char_index += 1
             if c.isdigit():
                 if begin == -1:
-                    begin = idx
-                end = idx
+                    begin = char_index
+                end = char_index
             else:
                 if begin >= 0:
                     part = part_number(lines, line_index, begin, end)
@@ -63,8 +63,7 @@ def is_symbol(lines: list, y: int, x: int):
         return False
     if x < 0 or x >= len(lines[0]):
         return False
-    c = lines[y][x]
-    if c.isdigit() or c == ".":
+    if lines[y][x].isdigit() or lines[y][x] == ".":
         return False
     return True
 
@@ -77,10 +76,10 @@ def gear_ratio(parts: list, y: int, x: int):
                     adjancent_parts.add(part.number)
     
     if len(adjancent_parts) == 2:
-        r = 1
+        ratio = 1
         for p in adjancent_parts:
-            r *= p
-        return r
+            ratio *= p
+        return ratio
     return 0
 
 class Part:
@@ -91,6 +90,7 @@ class Part:
         self.end = end
     
 # Part 1
+input = read_lines("input/day3-input.txt")
 sample = [
     "467..114..",
     "...*......",
@@ -106,11 +106,11 @@ sample = [
 
 value = solve_part1(sample)
 assert(value == 4361)
-value = solve_part1(read_lines("input/day3-input.txt"))
+value = solve_part1(input)
 assert(value == 546312)
 
 # Part 2
 value = solve_part2(sample)
 assert(value == 467835)
-value = solve_part2(read_lines("input/day3-input.txt"))
+value = solve_part2(input)
 assert(value == 87449461)
