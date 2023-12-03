@@ -10,21 +10,18 @@ def solve_part2(lines: list):
     return -1
 
 # Part 1
-part1_sample = [
+input = read_lines("input/dayX-input.txt")
+sample = [
     
 ]
 
-value = solve_part1(part1_sample)
+value = solve_part1(sample)
 assert(value == -1)
-value = solve_part1(read_lines("input/dayX-input.txt"))
+value = solve_part1(input)
 assert(value == -1)
 
 # Part 2
-part2_sample = [
-    
-]
-
-value = solve_part2(part2_sample)
+value = solve_part2(sample)
 assert(value == -1)
-value = solve_part2(read_lines("input/dayX-input.txt"))
+value = solve_part2(input)
 assert(value == -1)
