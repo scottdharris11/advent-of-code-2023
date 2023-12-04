@@ -15,6 +15,8 @@ def parse_integers(line: str, seperator):
     svalues = line.split(seperator)
     values = []
     for s in svalues:
+        if s.strip() == "":
+            continue
         values.append(int(s))
     return values
 
