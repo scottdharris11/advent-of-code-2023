@@ -56,6 +56,7 @@ class Game:
         return p
     
 # Part 1
+input = read_lines("input/day2-input.txt")
 sample = [
     "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green",
     "Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue",
@@ -66,11 +67,11 @@ sample = [
 
 value = solve_part1(sample)
 assert(value == 8)
-value = solve_part1(read_lines("input/day2-input.txt"))
+value = solve_part1(input)
 assert(value == 2795)
 
 # Part 2
 value = solve_part2(sample)
 assert(value == 2286)
-value = solve_part2(read_lines("input/day2-input.txt"))
+value = solve_part2(input)
 assert(value == 75561)
