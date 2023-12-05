@@ -21,44 +21,33 @@ def solve_part2(lines: list):
         for i in card.copies_won():
             counts[i-1] += 1 * counts[card.id-1]
     
-    total = 0
-    for count in counts:
-        total += count
-    return total
+    return sum(counts)
 
 def parse_card(line: str):
     c = line.split(":")
     card = Card(int(c[0][5:].strip()))
     n = c[1].split("|")
-    card.winning = parse_integers(n[0].strip(), " ")
-    card.actual = parse_integers(n[1].strip(), " ")
+    card.winning = set(parse_integers(n[0].strip(), " "))
+    card.actual = set(parse_integers(n[1].strip(), " "))
     return card
 
 class Card:
     def __init__(self, id) -> None:
         self.id = id
-        self.winning = []
-        self.actual = []
+        self.winning = set()
+        self.actual = set()
+    
+    def matches(self):
+        return len(self.winning & self.actual)
         
     def points(self):
-        p = 0
-        for n in self.actual:
-            for w in self.winning:
-                if n == w:
-                    if p == 0:
-                        p = 1
-                    else:
-                        p *= 2
-                    break
-        return p
+        m = self.matches()
+        if m < 2:
+            return m
+        return 2**(m-1)
     
     def copies_won(self):
-        m = 0
-        for n in self.actual:
-            for w in self.winning:
-                if n == w:
-                    m += 1
-                    break
+        m = self.matches()
         if m == 0:
             return []
         else:
