@@ -107,25 +107,23 @@ class Almanac:
             map[start] = (start, start + length - 1, target_start - start)
         start_pos.sort()
         
-        ranges = []
+        rules = []
         if start_pos[0] > 0:
-            ranges.append((0, start_pos[0]-1, 0))
+            rules.append((0, start_pos[0]-1, 0))
         for pos in start_pos:
-            ranges.append(map[pos])
-        ranges.append((map[start_pos[-1]][1]+1, sys.maxsize, 0))
+            rules.append(map[pos])
+        rules.append((map[start_pos[-1]][1]+1, sys.maxsize, 0))
         
         source_ranges = []
-        for t in target_ranges:
-            b = t[0]
-            end = t[1]
-            while b <= end:
-                for r in ranges:
-                    if b >= r[0] and b <= r[1]:
+        for begin, end in target_ranges:
+            while begin <= end:
+                for rStart, rEnd, offset in rules:
+                    if begin >= rStart and begin <= rEnd:
                         e = end
-                        if e > r[1]:
-                            e = r[1]
-                        source_ranges.append((b+r[2], e+r[2]))
-                        b = e + 1
+                        if e > rEnd:
+                            e = rEnd
+                        source_ranges.append((begin+offset, e+offset))
+                        begin = e + 1
                         break
                 
         return source_catg, source_ranges
