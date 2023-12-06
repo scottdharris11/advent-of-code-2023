@@ -1,3 +1,26 @@
+"""
+Goal: Using a set of linked category rules, find the earliest location (last linked category)
+      for a supplied set of possible seeds (first linked category).
+      
+Approach: Given that the seed ranges are extremely large it will not be possible to scan all
+          of the provided seeds to determine the smallest location.  To combat, this code
+          takes the approach of starting with the smallest ending location ranges and walking
+          the category linkages up to the seed ranges that would end up mapping to those locations.
+          Once that is discovered, find the first seed from the given seed ranges to intersect
+          with those paths.
+          
+          For example when using the sample input the first location range is [0,5].  When
+          mappping that back up to seeds the expand in the following ways:
+          
+          location: [(0, 55)]
+          humidity: [(0, 55)] --> Humidity 0 results in Location of 0
+          temperature: [(69, 69), (0, 54)]  --> Temperature 69 results in Humidity of 0
+          light: [(65, 65), (0, 44), (77, 86)] --> Light 65 results in Temperature of 69
+          water: [(72, 72), (0, 17), (25, 51), (84, 93)] --> Water of 72 results in Light of 65
+          fertilizer: [(72, 72), (11, 28), (36, 52), (0, 6), (53, 55), (84, 93)]
+          soil: [(72, 72), (26, 43), (51, 51), (52, 53), (0, 13), (15, 21), (14, 14), (54, 55), (84, 93)]
+          seed: [(70, 70), (26, 43), (99, 99), (50, 51), (0, 13), (15, 21), (14, 14), (52, 53), (82, 91)]
+"""
 import sys
 from utilities.data import read_lines, parse_integers
 from utilities.runner import Runner
