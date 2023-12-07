@@ -51,11 +51,15 @@ class Hand:
         # recursive function to replace Joker with each card type
         # to determine the best type possible
         if self.wild and cards.count('J') > 0:
+            if cards.count('J') > 3:
+                return FIVE_OF_KIND
             best_type = 0
             for r in CARDS:
                 if r == 'J':
                     continue
                 best_type = max(self.__hand_type(cards.replace("J", r, 1)), best_type)
+                if best_type == FIVE_OF_KIND:
+                    return FIVE_OF_KIND
             return best_type
         
         counts = {}
