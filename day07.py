@@ -27,16 +27,16 @@ class Hand:
         
     def __repr__(self): 
         return str((self.cards, self.bid)) 
-    
-    def compare(self, obj) -> int: 
-        if self.type == obj.type:
+
+    def __lt__(self, other) -> bool: 
+        if self.type == other.type:
             for i in range(len(self.cards)):
-                if self.cards[i] == obj.cards[i]:
+                if self.cards[i] == other.cards[i]:
                     continue
-                return self.__card_value(self.cards[i]) - self.__card_value(obj.cards[i])
+                return self.__card_value(self.cards[i]) < self.__card_value(other.cards[i])
         else:
-            return self.type - obj.type
-        return 0
+            return self.type < other.type
+        return False
     
     def __card_value(self, card: chr) -> int:
         v = CARDS.index(card)
@@ -94,26 +94,11 @@ def parse_hands(lines: list, wild: bool) -> list[Hand]:
     return hands
 
 def winnings(hands: list[Hand]) -> int:
-    hands = sort_hands(hands)
+    hands.sort()
     total = 0
     for i in range(len(hands)):
         total += (i+1) * hands[i].bid
     return total
-
-def sort_hands(hands: list[Hand]) -> list[Hand]:
-    # simple bubble sort implementation
-    for i in range(len(hands)-1):
-        swapped = False;
-        for j in range(len(hands)-i-1):
-            a = hands[j]
-            b = hands[j+1]
-            if a.compare(b) > 0:
-                hands[j] = b
-                hands[j+1] = a
-                swapped = True
-        if not swapped:
-            break
-    return hands
 
 # Part 1
 input = read_lines("input/day7-input.txt")
