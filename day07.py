@@ -3,21 +3,11 @@ from utilities.runner import Runner
 
 @Runner("Day 7", "Part 1")
 def solve_part1(lines: list):
-    hands = parse_hands(lines, False)
-    hands = sort_hands(hands)
-    total = 0
-    for i in range(len(hands)):
-        total += (i+1) * hands[i].bid
-    return total
+    return winnings(parse_hands(lines, False))
 
 @Runner("Day 7", "Part 2")
 def solve_part2(lines: list):
-    hands = parse_hands(lines, True)
-    hands = sort_hands(hands)
-    total = 0
-    for i in range(len(hands)):
-        total += (i+1) * hands[i].bid
-    return total
+    return winnings(parse_hands(lines, True))
 
 FIVE_OF_KIND = 6
 FOUR_OF_KIND = 5
@@ -99,7 +89,15 @@ def parse_hands(lines: list, wild: bool) -> list[Hand]:
         hands.append(Hand(cards, int(bid), wild))
     return hands
 
+def winnings(hands: list[Hand]) -> int:
+    hands = sort_hands(hands)
+    total = 0
+    for i in range(len(hands)):
+        total += (i+1) * hands[i].bid
+    return total
+
 def sort_hands(hands: list[Hand]) -> list[Hand]:
+    # simple bubble sort implementation
     for i in range(len(hands)-1):
         swapped = False;
         for j in range(len(hands)-i-1):
