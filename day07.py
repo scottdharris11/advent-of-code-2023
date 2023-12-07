@@ -3,7 +3,7 @@ from utilities.runner import Runner
 
 @Runner("Day 7", "Part 1")
 def solve_part1(lines: list):
-    hands = parse_hands(lines)
+    hands = parse_hands(lines, False)
     hands = sort_hands(hands)
     total = 0
     for i in range(len(hands)):
@@ -12,7 +12,12 @@ def solve_part1(lines: list):
 
 @Runner("Day 7", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    hands = parse_hands(lines, True)
+    hands = sort_hands(hands)
+    total = 0
+    for i in range(len(hands)):
+        total += (i+1) * hands[i].bid
+    return total
 
 FIVE_OF_KIND = 6
 FOUR_OF_KIND = 5
@@ -24,10 +29,11 @@ HIGH_CARD = 0
 CARDS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
 class Hand:
-    def __init__(self, cards, bid) -> None:
+    def __init__(self, cards: str, bid: int, wild: bool) -> None:
         self.cards = cards
         self.bid = bid
-        self.type = self.__hand_type()
+        self.wild = wild
+        self.type = self.__hand_type(cards)
         
     def __repr__(self): 
         return str((self.cards, self.bid)) 
@@ -37,14 +43,33 @@ class Hand:
             for i in range(len(self.cards)):
                 if self.cards[i] == obj.cards[i]:
                     continue
-                return CARDS.index(self.cards[i]) - CARDS.index(obj.cards[i])
+                return self.__card_value(self.cards[i]) - self.__card_value(obj.cards[i])
         else:
             return self.type - obj.type
         return 0
+    
+    def __card_value(self, card: chr) -> int:
+        v = CARDS.index(card)
+        if self.wild:
+            if card == 'J':
+                v = 0
+            else:
+                v += 1
+        return v
+    
+    def __hand_type(self, cards: str) -> int:
+        # recursive function to replace Joker with each card type
+        # to determine the best type possible
+        if self.wild and cards.count('J') > 0:
+            best_type = 0
+            for r in CARDS:
+                if r == 'J':
+                    continue
+                best_type = max(self.__hand_type(cards.replace("J", r, 1)), best_type)
+            return best_type
         
-    def __hand_type(self) -> int:
         counts = {}
-        for c in self.cards:
+        for c in cards:
             counts[c] = counts.get(c, 0) + 1
         pairs = 0
         three = False
@@ -67,11 +92,11 @@ class Hand:
             return ONE_PAIR
         return HIGH_CARD
 
-def parse_hands(lines: list) -> list[Hand]:
+def parse_hands(lines: list, wild: bool) -> list[Hand]:
     hands = []
     for line in lines:
         cards, bid = line.split()
-        hands.append(Hand(cards, int(bid)))
+        hands.append(Hand(cards, int(bid), wild))
     return hands
 
 def sort_hands(hands: list[Hand]) -> list[Hand]:
@@ -99,6 +124,6 @@ assert(value == 247823654)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == 5905)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == 245461700)
