@@ -1,4 +1,5 @@
 import re
+from math import lcm
 from utilities.data import read_lines
 from utilities.runner import Runner
 
@@ -9,9 +10,10 @@ def solve_part1(lines: list):
 
 @Runner("Day 8", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    map = Map(lines)
+    return map.ghost_steps()
 
-node_extract = re.compile("([A-Z]{3}) = \\(([A-Z]{3}), ([A-Z]{3})\\)")
+node_extract = re.compile("([A-Z0-9]{3}) = \\(([A-Z0-9]{3}), ([A-Z0-9]{3})\\)")
 
 class Map:
     def __init__(self, lines:str) -> None:
@@ -32,6 +34,23 @@ class Map:
             dir = self.__direction(step)
             pos = self.__next_node(pos, dir)
         return step + 1
+    
+    def ghost_steps(self) -> int:
+        # locate "A" nodes and individually determine steps to reach "Z" node
+        positions = {}
+        for node in self.nodes.keys():
+            if not node.endswith("A"):
+                continue
+            pos = node
+            step = -1
+            while not pos.endswith("Z"):
+                step += 1
+                dir = self.__direction(step)
+                pos = self.__next_node(pos, dir)
+            positions[node] = step + 1
+        
+        # find the least common multiple of the steps needed to find convergence point
+        return lcm(*positions.values())
     
     def __direction(self, step: int) -> chr:
         idx = step
@@ -58,7 +77,8 @@ value = solve_part1(input)
 assert(value == 22357)
 
 # Part 2
-value = solve_part2(sample)
-assert(value == -1)
+sample3 = read_lines("input/day8-sample3.txt")
+value = solve_part2(sample3)
+assert(value == 6)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == 10371555451871)
