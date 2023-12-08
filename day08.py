@@ -28,12 +28,12 @@ class Map:
     
     def steps(self) -> int:
         pos = "AAA"
-        step = -1
+        step = 0
         while pos != "ZZZ":
-            step += 1
             dir = self.__direction(step)
             pos = self.__next_node(pos, dir)
-        return step + 1
+            step += 1
+        return step
     
     def ghost_steps(self) -> int:
         # locate "A" nodes and individually determine steps to reach "Z" node
@@ -42,20 +42,20 @@ class Map:
             if not node.endswith("A"):
                 continue
             pos = node
-            step = -1
+            step = 0
             while not pos.endswith("Z"):
-                step += 1
                 dir = self.__direction(step)
                 pos = self.__next_node(pos, dir)
-            positions[node] = step + 1
+                step += 1
+            positions[node] = step
         
         # find the least common multiple of the steps needed to find convergence point
         return lcm(*positions.values())
     
     def __direction(self, step: int) -> chr:
         idx = step
-        while idx >= len(self.directions):
-            idx -= len(self.directions)
+        if idx >= len(self.directions):
+            idx %= len(self.directions)
         return self.directions[idx]
     
     def __next_node(self, node: str, dir: chr) -> str:
