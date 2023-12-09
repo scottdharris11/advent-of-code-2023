@@ -5,29 +5,17 @@ from utilities.runner import Runner
 def solve_part1(lines: list):
     total = 0
     for line in lines:
-        total += next_value(parse_integers(line, " "))
+        total += prev_next_values(parse_integers(line, " "))[1]
     return total
 
 @Runner("Day 9", "Part 2")
 def solve_part2(lines: list):
     total = 0
     for line in lines:
-        total += prev_value(parse_integers(line, " "))
+        total += prev_next_values(parse_integers(line, " "))[0]
     return total
 
-def next_value(values: list[int]) -> int:
-    d, allzeroes = diffs(values)
-    if allzeroes:
-        return 0
-    return values[-1] + next_value(d)
-
-def prev_value(values: list[int]) -> int:
-    d, allzeroes = diffs(values)
-    if allzeroes:
-        return 0
-    return values[0] - prev_value(d)      
-
-def diffs(values: list[int]) -> (list[int], bool):
+def prev_next_values(values: list[int]) -> (int, int):
     diffs = []
     allzeroes = True
     for i in range(len(values)-1):
@@ -35,7 +23,10 @@ def diffs(values: list[int]) -> (list[int], bool):
         diffs.append(d)
         if values[i+1] != 0 or values[i] != 0:
             allzeroes = False
-    return diffs, allzeroes
+    if allzeroes:
+        return 0, 0
+    po, pn = prev_next_values(diffs)
+    return values[0] - po,  values[-1] + pn
 
 # Part 1
 input = read_lines("input/day9-input.txt")
