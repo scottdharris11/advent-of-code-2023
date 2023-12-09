@@ -16,18 +16,18 @@ def solve_part2(lines: list):
     return total
 
 def next_value(values: list[int]) -> int:
-    diffs = []
-    allzeroes = True
-    for i in range(len(values)-1):
-        d = values[i+1] - values[i]
-        diffs.append(d)
-        if values[i+1] != 0 or values[i] != 0:
-            allzeroes = False
+    d, allzeroes = diffs(values)
     if allzeroes:
         return 0
-    return values[-1] + next_value(diffs)
+    return values[-1] + next_value(d)
 
 def prev_value(values: list[int]) -> int:
+    d, allzeroes = diffs(values)
+    if allzeroes:
+        return 0
+    return values[0] - prev_value(d)      
+
+def diffs(values: list[int]) -> (list[int], bool):
     diffs = []
     allzeroes = True
     for i in range(len(values)-1):
@@ -35,9 +35,7 @@ def prev_value(values: list[int]) -> int:
         diffs.append(d)
         if values[i+1] != 0 or values[i] != 0:
             allzeroes = False
-    if allzeroes:
-        return 0
-    return values[0] - prev_value(diffs)      
+    return diffs, allzeroes
 
 # Part 1
 input = read_lines("input/day9-input.txt")
