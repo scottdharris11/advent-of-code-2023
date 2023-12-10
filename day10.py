@@ -9,11 +9,12 @@ def solve_part1(lines: list):
 
 @Runner("Day 10", "Part 2")
 def solve_part2(lines: list):
-    pipes, _ = input_to_pipes(lines)
+    pipes, start = input_to_pipes(lines)
+    navigate_pipe(pipes, start)
     outside = set()
     for y, row in enumerate(pipes):
         for x, col in enumerate(row):
-            if col == None:
+            if col == None or not col.inloop:
                 pos = (x, y)
                 if pos not in outside:
                     es = EdgeSearcher(pos, pipes, outside)
@@ -26,7 +27,7 @@ def solve_part2(lines: list):
     inside = 0
     for y, row in enumerate(pipes):
         for x, col in enumerate(row):
-            if col == None:
+            if col == None or not col.inloop:
                 pos = (x, y)
                 if pos not in outside:
                     inside += 1
@@ -53,6 +54,11 @@ POSSIBLE_TYPES = [
     ((False, True, False, True), SOUTH_TO_EAST),
 ]
 
+SQUEEZE_VERT_LEFT = [VERTICAL, SOUTH_TO_WEST, NORTH_TO_WEST]
+SQUEEZE_VERT_RIGHT = [VERTICAL, SOUTH_TO_EAST, NORTH_TO_EAST]
+SQUEEZE_HORZ_TOP = [HORIZONTAL, NORTH_TO_EAST, NORTH_TO_WEST]
+SQUEEZE_HORZ_BOTTOM = [HORIZONTAL, SOUTH_TO_EAST, SOUTH_TO_WEST]
+
 class Pipe:
     def __init__(self, x: int, y: int, type:chr) -> None:
         self.pos = (x, y)
@@ -61,7 +67,7 @@ class Pipe:
         self.inloop = False
         
     def __repr__(self):
-        return str((self.pos, self.type, self.links))
+        return str((self.pos, self.type, self.links, self.inloop))
     
     def connect(self, p) -> None:
         if self.pos[1] == p.pos[1] and self.type in RIGHT_FROM_CONNS and p.type in RIGHT_TO_CONNS:
@@ -82,22 +88,66 @@ class EdgeSearcher(Searcher):
     def is_goal(self, obj) -> bool:
         if obj in self.outside:
             return True
-        if obj[0] <= 0 or obj[0] >= self.cols:
+        if obj[0] <= 0 or obj[0] >= self.cols - 1:
             return True
-        if obj[1] <= 0 or obj[1] >= self.rows:
+        if obj[1] <= 0 or obj[1] >= self.rows - 1:
             return True
         return False
     
     def possible_moves(self, obj) -> list[SearchMove]:
-        moves = []
+        moves = set()
+        x, y = obj
         for xo, yo in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            xo += obj[0]
-            yo += obj[1]
+            xo += x
+            yo += y
             if xo < 0 or xo >= self.cols or yo < 0 or yo >= self.rows:
                 continue
-            if self.pipes[yo][xo] == None:
-                moves.append(SearchMove(1, (xo, yo)))
-        return moves
+            if self.pipes[yo][xo] == None or not self.pipes[yo][xo].inloop:
+                moves.add((xo, yo))
+        
+        for left, right, yo in [(x-1, x, -1), (x, x+1, -1), (x-1, x, 1), (x, x+1, 1)]:
+            if left < 0 or right >= self.cols:
+                continue
+            v = y + yo
+            while v >= 0 and v < self.rows:
+                lpipe = self.pipes[v][left]
+                rpipe = self.pipes[v][right]
+                
+                if lpipe == None or rpipe == None:
+                    if lpipe == None:
+                        moves.add((left, v))
+                    if rpipe == None:
+                        moves.add((right, v))
+                    break
+                
+                if lpipe.pos in rpipe.links:
+                    break
+                
+                v += yo
+        
+        for top, bottom, xo in [(y-1, y, -1), (y, y+1, -1), (y-1, y, 1), (y, y+1, 1)]:
+            if top < 0 or bottom >= self.rows:
+                continue
+            h = x + xo
+            while h >= 0 and h < self.cols:
+                tpipe = self.pipes[top][h]
+                bpipe = self.pipes[bottom][h]
+                
+                if tpipe == None or bpipe == None:
+                    if tpipe == None:
+                        moves.add((h, top))
+                    if bpipe == None:
+                        moves.add((h, bottom))
+                    break
+                
+                if tpipe.pos in bpipe.links:
+                    break
+                h += xo
+                
+        rmoves = []
+        for move in moves:
+            rmoves.append(SearchMove(1, move))
+        return rmoves
     
     def distance_from_goal(self, obj) -> int:
         return min(obj[0], obj[1])
@@ -183,6 +233,8 @@ sample = read_lines("input/day10-sample.txt")
 sample2 = read_lines("input/day10-sample2.txt")
 sample3 = read_lines("input/day10-sample3.txt")
 sample4 = read_lines("input/day10-sample4.txt")
+sample5 = read_lines("input/day10-sample5.txt")
+sample6 = read_lines("input/day10-sample6.txt")
 
 value = solve_part1(sample)
 assert(value == 4)
@@ -196,5 +248,10 @@ value = solve_part2(sample3)
 assert(value == 4)
 value = solve_part2(sample4)
 assert(value == 4)
+value = solve_part2(sample5)
+assert(value == 8)
+value = solve_part2(sample6)
+assert(value == 10)
 value = solve_part2(input)
+assert(value < 831)
 assert(value == -1)
