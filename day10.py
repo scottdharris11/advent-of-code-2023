@@ -1,14 +1,36 @@
 from utilities.data import read_lines
 from utilities.runner import Runner
+from utilities.search import Search, Searcher, SearchMove
 
 @Runner("Day 10", "Part 1")
 def solve_part1(lines: list):
     pipes, start = input_to_pipes(lines)
-    return int(steps_in_loop(pipes, start) / 2)
+    return int(navigate_pipe(pipes, start) / 2)
 
 @Runner("Day 10", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    pipes, _ = input_to_pipes(lines)
+    outside = set()
+    for y, row in enumerate(pipes):
+        for x, col in enumerate(row):
+            if col == None:
+                pos = (x, y)
+                if pos not in outside:
+                    es = EdgeSearcher(pos, pipes, outside)
+                    s = Search(es)
+                    solution = s.best(SearchMove(0, pos))
+                    if solution == None:
+                        continue
+                    outside = outside.union(solution.path)
+
+    inside = 0
+    for y, row in enumerate(pipes):
+        for x, col in enumerate(row):
+            if col == None:
+                pos = (x, y)
+                if pos not in outside:
+                    inside += 1
+    return inside
 
 VERTICAL = '|'
 HORIZONTAL = "-"
@@ -36,6 +58,7 @@ class Pipe:
         self.pos = (x, y)
         self.type = type
         self.links = []
+        self.inloop = False
         
     def __repr__(self):
         return str((self.pos, self.type, self.links))
@@ -47,7 +70,38 @@ class Pipe:
         elif self.pos[0] == p.pos[0] and self.type in TOP_FROM_CONNS and p.type in TOP_TO_CONNS:
             self.links.append(p.pos)
             p.links.append(self.pos)
+
+class EdgeSearcher(Searcher):
+    def __init__(self, point: tuple[int], pipes: list[list[Pipe]], outside: list[tuple]) -> None:
+        self.point = point
+        self.pipes = pipes
+        self.rows = len(pipes)
+        self.cols = len(pipes[0])
+        self.outside = outside
         
+    def is_goal(self, obj) -> bool:
+        if obj in self.outside:
+            return True
+        if obj[0] <= 0 or obj[0] >= self.cols:
+            return True
+        if obj[1] <= 0 or obj[1] >= self.rows:
+            return True
+        return False
+    
+    def possible_moves(self, obj) -> list[SearchMove]:
+        moves = []
+        for xo, yo in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            xo += obj[0]
+            yo += obj[1]
+            if xo < 0 or xo >= self.cols or yo < 0 or yo >= self.rows:
+                continue
+            if self.pipes[yo][xo] == None:
+                moves.append(SearchMove(1, (xo, yo)))
+        return moves
+    
+    def distance_from_goal(self, obj) -> int:
+        return min(obj[0], obj[1])
+    
 def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], tuple):
     # parse pipes
     pipes = []
@@ -103,13 +157,18 @@ def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], tuple):
         
     return pipes, (startX, startY)
 
-def steps_in_loop(pipes: list[list[Pipe]], start: tuple[int]) -> int:
-    steps = 1
+def navigate_pipe(pipes: list[list[Pipe]], start: tuple[int]) -> int:
+    steps = 0
     prev = start
     loc = pipes[start[1]][start[0]].links[0]
-    while loc != start:
+    while True:
         steps += 1
         pipe = pipes[loc[1]][loc[0]]
+        pipe.inloop = True
+        
+        if start == pipe.pos:
+            break
+        
         for link in pipe.links:
             if link == prev:
                 continue
@@ -122,16 +181,20 @@ def steps_in_loop(pipes: list[list[Pipe]], start: tuple[int]) -> int:
 input = read_lines("input/day10-input.txt")
 sample = read_lines("input/day10-sample.txt")
 sample2 = read_lines("input/day10-sample2.txt")
+sample3 = read_lines("input/day10-sample3.txt")
+sample4 = read_lines("input/day10-sample4.txt")
 
 value = solve_part1(sample)
 assert(value == 4)
 value = solve_part1(sample2)
 assert(value == 8)
 value = solve_part1(input)
-assert(value == -1)
+assert(value == 6738)
 
 # Part 2
-value = solve_part2(sample)
-assert(value == -1)
+value = solve_part2(sample3)
+assert(value == 4)
+value = solve_part2(sample4)
+assert(value == 4)
 value = solve_part2(input)
 assert(value == -1)
