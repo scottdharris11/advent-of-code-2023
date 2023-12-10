@@ -3,7 +3,8 @@ from utilities.runner import Runner
 
 @Runner("Day 10", "Part 1")
 def solve_part1(lines: list):
-    pipes = input_to_pipes(lines)
+    pipes, start = input_to_pipes(lines)
+    return int(steps_in_loop(pipes, start) / 2)
 
 @Runner("Day 10", "Part 2")
 def solve_part2(lines: list):
@@ -21,7 +22,7 @@ RIGHT_TO_CONNS = [HORIZONTAL, NORTH_TO_WEST, SOUTH_TO_WEST]
 TOP_FROM_CONNS = [VERTICAL, NORTH_TO_EAST, NORTH_TO_WEST]
 TOP_TO_CONNS = [VERTICAL, SOUTH_TO_EAST, SOUTH_TO_WEST]
 
-START_TYPES = [
+POSSIBLE_TYPES = [
     ((True, True, False, False), HORIZONTAL),
     ((False, False, True, True), VERTICAL),
     ((True, False, True, False), NORTH_TO_WEST),
@@ -32,29 +33,22 @@ START_TYPES = [
 
 class Pipe:
     def __init__(self, x: int, y: int, type:chr) -> None:
-        self.x = x
-        self.y = y
+        self.pos = (x, y)
         self.type = type
         self.links = []
         
     def __repr__(self):
-        l = []
-        for link in self.links:
-            l.append((link.x, link.y))
-        return str((self.x, self.y, self.type, l))
+        return str((self.pos, self.type, self.links))
     
     def connect(self, p) -> None:
-        print("Checking connection between: " + str((self.x, self.y, p.x, p.y)))
-        if self.y == p.y and self.type in RIGHT_FROM_CONNS and p.type in RIGHT_TO_CONNS:
-            print("connecting right: %s AND %s" % (self, p))
-            self.links.append(p)
-            p.links.append(self)
-        elif self.x == p.x and self.type in TOP_FROM_CONNS and p.type in TOP_TO_CONNS:
-            print("connecting to top: cl%s AND %s" % (self, p))
-            self.links.append(p)
-            p.links.append(self)
+        if self.pos[1] == p.pos[1] and self.type in RIGHT_FROM_CONNS and p.type in RIGHT_TO_CONNS:
+            self.links.append(p.pos)
+            p.links.append(self.pos)
+        elif self.pos[0] == p.pos[0] and self.type in TOP_FROM_CONNS and p.type in TOP_TO_CONNS:
+            self.links.append(p.pos)
+            p.links.append(self.pos)
         
-def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], int, int):
+def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], tuple):
     # parse pipes
     pipes = []
     startX, startY = 0, 0
@@ -90,7 +84,7 @@ def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], int, int):
             possible[i] = True
     
     pt = tuple(possible)
-    for s in START_TYPES:
+    for s in POSSIBLE_TYPES:
         if s[0] == pt:
             pipes[startY][startX].type = s[1]
             break
@@ -107,18 +101,32 @@ def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], int, int):
                     continue
                 pipes[y][x].connect(pipes[yo][xo])
         
-    
-    print(str((startX, startY)))
-    for row in pipes:
-        print(row)
-    return pipes, startX, startY
+    return pipes, (startX, startY)
+
+def steps_in_loop(pipes: list[list[Pipe]], start: tuple[int]) -> int:
+    steps = 1
+    prev = start
+    loc = pipes[start[1]][start[0]].links[0]
+    while loc != start:
+        steps += 1
+        pipe = pipes[loc[1]][loc[0]]
+        for link in pipe.links:
+            if link == prev:
+                continue
+            prev = loc
+            loc = link
+            break
+    return steps
 
 # Part 1
 input = read_lines("input/day10-input.txt")
 sample = read_lines("input/day10-sample.txt")
+sample2 = read_lines("input/day10-sample2.txt")
 
 value = solve_part1(sample)
-assert(value == -1)
+assert(value == 4)
+value = solve_part1(sample2)
+assert(value == 8)
 value = solve_part1(input)
 assert(value == -1)
 
