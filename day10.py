@@ -30,6 +30,7 @@ def solve_part2(lines: list):
             if col == None or not col.inloop:
                 pos = (x, y)
                 if pos not in outside:
+                    print(pos)
                     inside += 1
     return inside
 
@@ -53,11 +54,6 @@ POSSIBLE_TYPES = [
     ((False, True, True, False), NORTH_TO_EAST),
     ((False, True, False, True), SOUTH_TO_EAST),
 ]
-
-SQUEEZE_VERT_LEFT = [VERTICAL, SOUTH_TO_WEST, NORTH_TO_WEST]
-SQUEEZE_VERT_RIGHT = [VERTICAL, SOUTH_TO_EAST, NORTH_TO_EAST]
-SQUEEZE_HORZ_TOP = [HORIZONTAL, NORTH_TO_EAST, NORTH_TO_WEST]
-SQUEEZE_HORZ_BOTTOM = [HORIZONTAL, SOUTH_TO_EAST, SOUTH_TO_WEST]
 
 class Pipe:
     def __init__(self, x: int, y: int, type:chr) -> None:
@@ -88,11 +84,16 @@ class EdgeSearcher(Searcher):
     def is_goal(self, obj) -> bool:
         if obj in self.outside:
             return True
-        if obj[0] <= 0 or obj[0] >= self.cols - 1:
+        if obj[0] < 0 or obj[0] == self.cols:
             return True
-        if obj[1] <= 0 or obj[1] >= self.rows - 1:
+        if obj[1] < 0 or obj[1] == self.rows:
             return True
         return False
+    
+    def __pipe(self, x: int, y: int) -> Pipe:
+        if x < 0 or x >= self.cols or y < 0 or y >= self.rows:
+            return None
+        return self.pipes[y][x]
     
     def possible_moves(self, obj) -> list[SearchMove]:
         moves = set()
@@ -100,18 +101,16 @@ class EdgeSearcher(Searcher):
         for xo, yo in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             xo += x
             yo += y
-            if xo < 0 or xo >= self.cols or yo < 0 or yo >= self.rows:
-                continue
-            if self.pipes[yo][xo] == None or not self.pipes[yo][xo].inloop:
+            if xo == -1 or xo == self.cols or yo == -1 or yo == self.rows:
+                moves.add((xo, yo))
+            elif self.pipes[yo][xo] == None or not self.pipes[yo][xo].inloop:
                 moves.add((xo, yo))
         
         for left, right, yo in [(x-1, x, -1), (x, x+1, -1), (x-1, x, 1), (x, x+1, 1)]:
-            if left < 0 or right >= self.cols:
-                continue
             v = y + yo
-            while v >= 0 and v < self.rows:
-                lpipe = self.pipes[v][left]
-                rpipe = self.pipes[v][right]
+            while v >= -1 and v <= self.rows:
+                lpipe = self.__pipe(left, v)
+                rpipe = self.__pipe(right, v)
                 
                 if lpipe == None or rpipe == None:
                     if lpipe == None:
@@ -120,18 +119,16 @@ class EdgeSearcher(Searcher):
                         moves.add((right, v))
                     break
                 
-                if lpipe.pos in rpipe.links:
+                if lpipe.inloop and lpipe.pos in rpipe.links:
                     break
                 
                 v += yo
         
         for top, bottom, xo in [(y-1, y, -1), (y, y+1, -1), (y-1, y, 1), (y, y+1, 1)]:
-            if top < 0 or bottom >= self.rows:
-                continue
             h = x + xo
-            while h >= 0 and h < self.cols:
-                tpipe = self.pipes[top][h]
-                bpipe = self.pipes[bottom][h]
+            while h >= -1 and h <= self.cols:
+                tpipe = self.__pipe(h, top)
+                bpipe = self.__pipe(h, bottom)
                 
                 if tpipe == None or bpipe == None:
                     if tpipe == None:
@@ -140,7 +137,7 @@ class EdgeSearcher(Searcher):
                         moves.add((h, bottom))
                     break
                 
-                if tpipe.pos in bpipe.links:
+                if tpipe.inloop and tpipe.pos in bpipe.links:
                     break
                 h += xo
                 
@@ -150,7 +147,16 @@ class EdgeSearcher(Searcher):
         return rmoves
     
     def distance_from_goal(self, obj) -> int:
-        return min(obj[0], obj[1])
+        fromleft = obj[0]
+        fromright = self.cols - obj[0]
+        fromtop = obj[1]
+        frombottom = self.rows - obj[1]
+        m = min(fromleft, fromright, fromtop, frombottom)
+        if m < 0:
+            return 0
+        else:
+            return m + 1
+            
     
 def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], tuple):
     # parse pipes
@@ -252,6 +258,6 @@ value = solve_part2(sample5)
 assert(value == 8)
 value = solve_part2(sample6)
 assert(value == 10)
-value = solve_part2(input)
-assert(value < 831)
-assert(value == -1)
+#value = solve_part2(input)
+#assert(value < 809)
+#assert(value == -1)
