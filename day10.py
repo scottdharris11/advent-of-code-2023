@@ -93,7 +93,12 @@ class EdgeSearcher(Searcher):
     def __pipe(self, x: int, y: int) -> Pipe:
         if x < 0 or x >= self.cols or y < 0 or y >= self.rows:
             return None
-        return self.pipes[y][x]
+        pipe = self.pipes[y][x]
+        if pipe == None:
+            return None
+        if not pipe.inloop:
+            return None
+        return pipe
     
     def possible_moves(self, obj) -> list[SearchMove]:
         moves = set()
@@ -106,40 +111,33 @@ class EdgeSearcher(Searcher):
             elif self.pipes[yo][xo] == None or not self.pipes[yo][xo].inloop:
                 moves.add((xo, yo))
         
-        for left, right, yo in [(x-1, x, -1), (x, x+1, -1), (x-1, x, 1), (x, x+1, 1)]:
+        for left, right, yo, dir in [(x-1, x, -1, 'U'), (x, x+1, -1, 'U'), (x-1, x, 1, 'D'), (x, x+1, 1, 'D')]:
             v = y + yo
-            while v >= -1 and v <= self.rows:
-                lpipe = self.__pipe(left, v)
-                rpipe = self.__pipe(right, v)
-                
-                if lpipe == None or rpipe == None:
-                    if lpipe == None:
-                        moves.add((left, v))
-                    if rpipe == None:
-                        moves.add((right, v))
-                    break
-                
-                if lpipe.inloop and lpipe.pos in rpipe.links:
-                    break
-                
-                v += yo
+            lpipe = self.__pipe(left, v)
+            rpipe = self.__pipe(right, v)
+            
+            if lpipe == None or rpipe == None:
+                if lpipe == None:
+                    moves.add((left, v))
+                if rpipe == None:
+                    moves.add((right, v))
+            else:
+                if lpipe.pos not in rpipe.links:
+                    self.__squeeze(lpipe.pos, rpipe.pos, moves, dir, set())
         
-        for top, bottom, xo in [(y-1, y, -1), (y, y+1, -1), (y-1, y, 1), (y, y+1, 1)]:
+        for top, bottom, xo, dir in [(y-1, y, -1, 'L'), (y, y+1, -1, 'L'), (y-1, y, 1, 'R'), (y, y+1, 1, 'R')]:
             h = x + xo
-            while h >= -1 and h <= self.cols:
-                tpipe = self.__pipe(h, top)
-                bpipe = self.__pipe(h, bottom)
-                
-                if tpipe == None or bpipe == None:
-                    if tpipe == None:
-                        moves.add((h, top))
-                    if bpipe == None:
-                        moves.add((h, bottom))
-                    break
-                
-                if tpipe.inloop and tpipe.pos in bpipe.links:
-                    break
-                h += xo
+            tpipe = self.__pipe(h, top)
+            bpipe = self.__pipe(h, bottom)
+            
+            if tpipe == None or bpipe == None:
+                if tpipe == None:
+                    moves.add((h, top))
+                if bpipe == None:
+                    moves.add((h, bottom))
+            else:
+                if tpipe.pos not in bpipe.links:
+                    self.__squeeze(tpipe.pos, bpipe.pos, moves, dir, set())
                 
         rmoves = []
         for move in moves:
@@ -157,6 +155,52 @@ class EdgeSearcher(Searcher):
         else:
             return m + 1
             
+    def __squeeze(self, pos1, pos2, moves, dir, searched):    
+        pos1x, pos1y = pos1
+        pos2x, pos2y = pos2
+        s = (pos1x, pos1y, pos2x, pos2y)
+        if s in searched:
+            return
+        searched.add(s)
+        
+        checks = []
+        if dir == 'L':
+            checks = [
+                ('L', pos1x-1, pos1y, pos2x-1, pos2y), 
+                ('D', pos2x-1, pos2y, pos2x, pos2y),
+                ('U', pos1x-1, pos1y, pos1x, pos1y), 
+            ]
+        elif dir == 'R':
+            checks = [
+                ('R', pos1x+1, pos1y, pos2x+1, pos2y), 
+                ('D', pos2x, pos2y, pos2x+1, pos2y),
+                ('U', pos1x, pos1y, pos1x+1, pos1y),
+            ]
+        elif dir == 'D':
+            checks = [
+                ('D', pos1x, pos1y+1, pos2x, pos2y+1), 
+                ('R', pos2x, pos2y, pos2x, pos2y+1), 
+                ('L', pos1x, pos1y, pos1x, pos1y+1),
+            ]
+        else:
+            checks = [
+                ('U', pos1x, pos1y-1, pos2x, pos2y-1), 
+                ('R', pos2x, pos2y+1, pos2x, pos2y), 
+                ('L', pos1x, pos1y+1, pos1x, pos1y),
+            ]
+        
+        for check in checks:
+            pos1pipe = self.__pipe(check[1], check[2])
+            pos2pipe = self.__pipe(check[3], check[4])
+            
+            if pos1pipe == None or pos2pipe == None:
+                if pos1pipe == None:
+                    moves.add((check[1], check[2]))
+                if pos2pipe == None:
+                    moves.add((check[3], check[4]))
+            else:
+                if pos1pipe.pos not in pos2pipe.links:
+                    self.__squeeze(pos1pipe.pos, pos2pipe.pos, moves, check[0], searched)
     
 def input_to_pipes(lines: list[str]) -> (list[list[Pipe]], tuple):
     # parse pipes
@@ -258,6 +302,7 @@ value = solve_part2(sample5)
 assert(value == 8)
 value = solve_part2(sample6)
 assert(value == 10)
-#value = solve_part2(input)
-#assert(value < 809)
-#assert(value == -1)
+value = solve_part2(input)
+assert(value < 809)
+assert(value != 686)
+assert(value == -1)
