@@ -1,4 +1,3 @@
-import math
 from utilities.data import read_lines
 from utilities.runner import Runner
 
@@ -38,34 +37,22 @@ class Universe:
                         self.emptycols.remove(x)
     
     def distance_between(self, g1: Galaxy, g2: Galaxy) -> int:
-        distance = 0
-        
-        xrange = range(0)
-        if g1.pos[0] >= g2.pos[0]:
-            xrange = range(g2.pos[0], g1.pos[0])
-        else:
-            xrange = range(g1.pos[0], g2.pos[0])
-        
-        for i in xrange:
-            if i in self.emptycols:
-                distance += self.empty_adjust
-            else:
-                distance += 1
-                
-        yrange = range(0)
-        if g1.pos[1] >= g2.pos[1]:
-            yrange = range(g2.pos[1], g1.pos[1])
-        else:
-            yrange = range(g1.pos[1], g2.pos[1])
-        
-        for i in yrange:
-            if i in self.emptyrows:
-                distance += self.empty_adjust
-            else:
-                distance += 1
-        
+        distance = self.__distance(g1.pos[0], g2.pos[0], self.emptycols)
+        distance += self.__distance(g1.pos[1], g2.pos[1], self.emptyrows)
         return distance
     
+    def __distance(self, g1: int, g2: int, emptycheck: list) -> int:
+        r = range(g1, g2)
+        if g1 >= g2:
+            r = range(g2, g1)
+        distance = 0
+        for i in r:
+            if i in emptycheck:
+                distance += self.empty_adjust
+            else:
+                distance += 1
+        return distance
+
 def sum_distances(u: Universe) -> int:
     total = 0
     gcnt = len(u.galaxies)
