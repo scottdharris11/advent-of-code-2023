@@ -6,12 +6,19 @@ def solve_part1(lines: list):
     total = 0
     for line in lines:
         s = line.split(" ")
-        total += possibilities(Record(s[0], parse_integers(s[1], ",")))
+        r = Record(s[0], parse_integers(s[1], ","))
+        total += possibilities(r)
     return total
 
 @Runner("Day 12", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    total = 0
+    for line in lines:
+        s = line.split(" ")
+        r = Record(s[0], parse_integers(s[1], ","))
+        possible = possibilities(r)
+        total += possible
+    return total
 
 class Record:
     def __init__(self, mask: str, pattern: list[int]) -> None:
@@ -29,7 +36,7 @@ class Record:
             if c == '?':
                 if count == i:
                     return si
-                count += 1   
+                count += 1
 
 def possibilities(r: Record) -> int:
     if r.damagedtofill == 0:
@@ -86,6 +93,6 @@ assert(value == 7221)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == 525152)
 value = solve_part2(input)
 assert(value == -1)
