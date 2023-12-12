@@ -17,42 +17,42 @@ class Record:
     def __init__(self, mask: str, pattern: list[int]) -> None:
         self.mask = mask
         self.pattern = pattern
+        self.unknown = mask.count('?')
+        self.damagedtofill = sum(pattern) - mask.count('#')
     
     def __repr__(self):
         return str((self.mask, self.pattern))
+    
+    def unknownIndex(self, i: int) -> int:
+        count = 0
+        for si, c in enumerate(self.mask):
+            if c == '?':
+                if count == i:
+                    return si
+                count += 1   
 
 def possibilities(r: Record) -> int:
     #print(r)
-    unknown = r.mask.count('?')
-    tofill = sum(r.pattern) - r.mask.count('#')
-    if tofill == 0:
-        return 0
     placements = []
-    for i in range(unknown-tofill+1):
-        fill(r, tofill, unknown, tuple(), i, placements)
+    for i in range(r.unknown-r.damagedtofill+1):
+        fill(r, tuple(), i, placements)
     #print(placements)
     return len(placements)
 
-def fill(r: Record, tofill: int, unknown: int, filled: tuple[int], start: int, placements: list):
+def fill(r: Record, filled: tuple[int], idx: int, placements: list):
     f = list(filled)
-    f.append(unknownStrIndex(r.mask, start))
+    f.append(r.unknownIndex(idx))
     if not possible(r, f):
         return
-    if len(f) == tofill:
+    if len(f) == r.damagedtofill:
         placements.append(tuple(f))
         return
-    for i in range(start+1, unknown):
-        fill(r, tofill, unknown, tuple(f), i, placements)
-        
-def unknownStrIndex(mask: str, i: int) -> int:
-    count = 0
-    for si, c in enumerate(mask):
-        if c == '?':
-            if count == i:
-                return si
-            count += 1
+    for i in range(idx+1, r.unknown):
+        fill(r, tuple(f), i, placements)
 
 def possible(r: Record, placement: tuple[int]) -> bool:
+    if len(placement) > r.damagedtofill:
+        return False
     uCnt = 0
     uIdx = 0
     placed = 0
