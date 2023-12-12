@@ -32,6 +32,8 @@ class Record:
                 count += 1   
 
 def possibilities(r: Record) -> int:
+    if r.damagedtofill == 0:
+        return 1
     #print(r)
     placements = []
     for i in range(r.unknown-r.damagedtofill+1):
@@ -53,30 +55,25 @@ def fill(r: Record, filled: tuple[int], idx: int, placements: list):
 def possible(r: Record, placement: tuple[int]) -> bool:
     if len(placement) > r.damagedtofill:
         return False
-    uCnt = 0
-    uIdx = 0
-    placed = 0
+    damageCnt, damageIdx, placed = 0, 0, 0
     for i, c in enumerate(r.mask):
         if c == '?':
-            if placed == len(placement):
-                return uCnt <= r.pattern[uIdx]
+            if placed == len(placement) and placed < r.damagedtofill:
+                return damageCnt <= r.pattern[damageIdx]
             c = "."
             if i in placement:
                 placed += 1
                 c = "#"
         if c == "#":
-            uCnt += 1
+            damageCnt += 1
         else:
-            if uCnt == 0:
+            if damageCnt == 0:
                 continue
-            if uCnt != r.pattern[uIdx]:
+            if damageCnt != r.pattern[damageIdx]:
                 return False
-            uIdx += 1
-            uCnt = 0
-            if placed == len(placement):
-                return True
-    return uCnt == r.pattern[-1]
-            
+            damageIdx += 1
+            damageCnt = 0
+    return damageCnt == 0 or damageCnt == r.pattern[-1]
 
 # Part 1
 input = read_lines("input/day12-input.txt")
@@ -84,10 +81,8 @@ sample = read_lines("input/day12-sample.txt")
 
 value = solve_part1(sample)
 assert(value == 21)
-#value = solve_part1(["#..??####??? 1,4"])
 value = solve_part1(input)
-assert(value > 7218)
-assert(value < 7851)
+assert(value == 7221)
 
 # Part 2
 value = solve_part2(sample)
