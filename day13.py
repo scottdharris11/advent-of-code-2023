@@ -6,19 +6,23 @@ def solve_part1(lines: list):
     patterns = parse_patterns(lines)
     total = 0
     for p in patterns:
-        total += p.value()
+        total += p.value(False)
     return total
 
 @Runner("Day 13", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    patterns = parse_patterns(lines)
+    total = 0
+    for p in patterns:
+        total += p.value(True)
+    return total
 
 class Pattern:
     def __init__(self, lines) -> None:
         self.rows = lines
         self.cols = self.__columns(lines)
         
-    def value(self) -> int:
+    def value(self, smudges: bool) -> int:
         vertical = self.__reflection_point(self.cols)
         horitzontal = self.__reflection_point(self.rows)
         t = vertical
@@ -54,10 +58,11 @@ class Pattern:
         return True
 
 def parse_patterns(lines: list[str]) -> list[Pattern]:
-    lines.append("")
+    input = lines[:]
+    input.append("")
     patterns = []
     pStart = 0
-    for i, line in enumerate(lines):
+    for i, line in enumerate(input):
         if line == "":
             patterns.append(Pattern(lines[pStart:i]))
             pStart = i+1
@@ -75,6 +80,6 @@ assert(value == 30575)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == 400)
 value = solve_part2(input)
 assert(value == -1)
