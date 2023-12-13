@@ -6,7 +6,7 @@ def solve_part1(lines: list):
     patterns = parse_patterns(lines)
     total = 0
     for p in patterns:
-        total += p.outside_total()
+        total += p.value()
     return total
 
 @Runner("Day 13", "Part 2")
@@ -18,20 +18,13 @@ class Pattern:
         self.rows = lines
         self.cols = self.__columns(lines)
         
-    def outside_total(self) -> int:
-        vertical = self.__outside_reflection(self.cols)
-        horitzontal = self.__outside_reflection(self.rows)
+    def value(self) -> int:
+        vertical = self.__reflection_point(self.cols)
+        horitzontal = self.__reflection_point(self.rows)
         t = vertical
         t += horitzontal * 100
         return t
-    
-    def any_total(self) -> int:
-        vertical = self.__any_reflection(self.cols)
-        horitzontal = self.__any_reflection(self.rows)
-        t = vertical
-        t += horitzontal * 100
-        return t
-            
+                
     def __columns(self, rows: list[str]) -> list[str]:
         cols = []
         for i in range(len(rows[0])):
@@ -40,7 +33,7 @@ class Pattern:
                 cols[i] += r[i]
         return cols
         
-    def __outside_reflection(self, rows: list[str]) -> int:
+    def __reflection_point(self, rows: list[str]) -> int:
         l = len(rows)
         for i in range(1, l, 2):
             if self.__reflection(rows[i:]):
@@ -49,15 +42,7 @@ class Pattern:
             if self.__reflection(rows[:l-i]):
                 return int((l-i) / 2)
         return 0
-    
-    def __any_reflection(self, rows: list[str]) -> int:
-        for i, row in enumerate(rows):
-            for m in range(len(rows)-1, i+1, -1):
-                if row == rows[m]:
-                    if self.__reflection(rows[i:m+1]):
-                        return int((m - i + 1) / 2) + 1
-        return 0
-                    
+                        
     def __reflection(self, lines: list[str]) -> bool:
         t = 0
         b = len(lines) - 1
