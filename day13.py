@@ -23,8 +23,35 @@ class Pattern:
         self.cols = self.__columns(lines)
         
     def value(self, smudges: bool) -> int:
-        vertical = self.__reflection_point(self.cols)
-        horitzontal = self.__reflection_point(self.rows)
+        vertical = 0
+        horitzontal = 0
+        if smudges:
+            row_count = len(self.rows)
+            col_count = len(self.rows[0])
+            for i in range(row_count):
+                for j in range(col_count):
+                    orig = self.rows[i][j]
+                    replace = "."
+                    if orig == ".":
+                        replace = "#"
+                    
+                    self.rows[i] = self.rows[i][:j] + replace + self.rows[i][j+1:]
+                    self.cols[j] = self.cols[j][:i] + replace + self.cols[j][i+1:]
+                    vertical, r = self.__reflection_point(self.cols)
+                    if j < r[0] or j > r[1]:
+                        vertical = 0
+                    horitzontal, r = self.__reflection_point(self.rows)
+                    if i < r[0] or i > r[1]:
+                        horitzontal = 0
+                    self.rows[i] = self.rows[i][:j] + orig + self.rows[i][j+1:]
+                    self.cols[j] = self.cols[j][:i] + orig + self.cols[j][i+1:]
+                    if horitzontal > 0 or vertical > 0:
+                        break
+                if horitzontal > 0 or vertical > 0:
+                    break
+        else:
+            vertical, _ = self.__reflection_point(self.cols)
+            horitzontal, _ = self.__reflection_point(self.rows)
         t = vertical
         t += horitzontal * 100
         return t
@@ -37,15 +64,15 @@ class Pattern:
                 cols[i] += r[i]
         return cols
         
-    def __reflection_point(self, rows: list[str]) -> int:
+    def __reflection_point(self, rows: list[str]) -> (int, tuple[int]):
         l = len(rows)
         for i in range(1, l, 2):
             if self.__reflection(rows[i:]):
-                return int((l-i) / 2) + i
+                return int((l-i) / 2) + i, (i, l-1)
         for i in range(1, l, 2):
             if self.__reflection(rows[:l-i]):
-                return int((l-i) / 2)
-        return 0
+                return int((l-i) / 2), (0, l-i)
+        return 0, (-1, l)
                         
     def __reflection(self, lines: list[str]) -> bool:
         t = 0
@@ -82,4 +109,4 @@ assert(value == 30575)
 value = solve_part2(sample)
 assert(value == 400)
 value = solve_part2(input)
-assert(value == -1)
+assert(value > 25056)
