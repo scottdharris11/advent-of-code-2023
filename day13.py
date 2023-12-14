@@ -19,8 +19,10 @@ def solve_part2(lines: list):
 
 class Pattern:
     def __init__(self, lines) -> None:
-        self.rows = lines
-        self.cols = self.__columns(lines)
+        self.rows = []
+        for line in lines:
+            self.rows.append(list(line))
+        self.cols = self.__columns(self.rows)
         
     def value(self, smudges: bool) -> int:
         vertical = 0
@@ -35,16 +37,16 @@ class Pattern:
                     if orig == ".":
                         replace = "#"
                     
-                    self.rows[i] = self.rows[i][:j] + replace + self.rows[i][j+1:]
-                    self.cols[j] = self.cols[j][:i] + replace + self.cols[j][i+1:]
+                    self.rows[i][j] = replace
+                    self.cols[j][i] = replace
                     vertical, r = self.__reflection_point(self.cols)
                     if j < r[0] or j > r[1]:
                         vertical = 0
                     horitzontal, r = self.__reflection_point(self.rows)
                     if i < r[0] or i > r[1]:
                         horitzontal = 0
-                    self.rows[i] = self.rows[i][:j] + orig + self.rows[i][j+1:]
-                    self.cols[j] = self.cols[j][:i] + orig + self.cols[j][i+1:]
+                    self.rows[i][j] = orig
+                    self.cols[j][i] = orig
                     if horitzontal > 0 or vertical > 0:
                         break
                 if horitzontal > 0 or vertical > 0:
@@ -56,12 +58,13 @@ class Pattern:
         t += horitzontal * 100
         return t
                 
-    def __columns(self, rows: list[str]) -> list[str]:
+    def __columns(self, rows: list[list[chr]]) -> list[str]:
         cols = []
         for i in range(len(rows[0])):
-            cols.append("")
+            c = []
             for r in rows:
-                cols[i] += r[i]
+                c.append(r[i])
+            cols.append(c)
         return cols
         
     def __reflection_point(self, rows: list[str]) -> (int, tuple[int]):
@@ -71,7 +74,7 @@ class Pattern:
                 return int((l-i) / 2) + i, (i, l-1)
         for i in range(1, l, 2):
             if self.__reflection(rows[:l-i]):
-                return int((l-i) / 2), (0, l-i)
+                return int((l-i) / 2), (0, l-i-1)
         return 0, (-1, l)
                         
     def __reflection(self, lines: list[str]) -> bool:
@@ -109,4 +112,4 @@ assert(value == 30575)
 value = solve_part2(sample)
 assert(value == 400)
 value = solve_part2(input)
-assert(value > 25056)
+assert(value > 33944)
