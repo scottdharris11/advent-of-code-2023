@@ -10,7 +10,9 @@ def solve_part1(lines: list):
 @Runner("Day 14", "Part 2")
 def solve_part2(lines: list):
     p = Platform(lines)
-    for _ in range(3):
+    for i in range(1000000000):
+        if i % 1000000 == 0:
+            print("cycle %d, cache size: %d, cache hits: %d" % (i, len(p.cyclecache), p.cachehits))
         p.cycle()
     return p.load()
 
@@ -21,6 +23,8 @@ class Platform:
             self.rows.append(list(line))
         self.row_count = len(self.rows)
         self.col_count = len(self.rows[0])
+        self.cyclecache = {}
+        self.cachehits = 0
         
     def __repr__(self) -> str:
         output = ""
@@ -29,11 +33,17 @@ class Platform:
         return output
     
     def cycle(self) -> None:
+        h = self.__rowhash()
+        if h in self.cyclecache:
+            self.rows = self.cyclecache[h]
+            self.cachehits += 1
+            return
         self.tilt_north()
         self.tilt_west()
         self.tilt_south()
         self.tilt_east()
-        
+        self.cyclecache[h] = self.__copy()
+            
     def tilt_north(self) -> None:
         for i in range(self.col_count):
             block = -1
@@ -88,6 +98,18 @@ class Platform:
             l = self.row_count - i
             total += l * row.count("O")
         return total
+    
+    def __rowhash(self) -> int:
+        output = ""
+        for row in self.rows:
+            output += "".join(row)
+        return hash(output)
+    
+    def __copy(self) -> list:
+        output = []
+        for row in self.rows:
+            output.append(row[:])
+        return output
 
 # Part 1
 input = read_lines("input/day14/input.txt")
