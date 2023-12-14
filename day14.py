@@ -10,10 +10,17 @@ def solve_part1(lines: list):
 @Runner("Day 14", "Part 2")
 def solve_part2(lines: list):
     p = Platform(lines)
-    for i in range(1000000000):
-        if i % 1000000 == 0:
-            print("cycle %d, cache size: %d, cache hits: %d" % (i, len(p.cyclecache), p.cachehits))
+    
+    # find repeat spot
+    cyclesToRepeat = 0
+    while not p.cycle():
+        cyclesToRepeat += 1
+    
+    # finish cycle and any extras needed
+    m = 1000000000 % cyclesToRepeat
+    for _ in range(cyclesToRepeat-1+m):
         p.cycle()
+    
     return p.load()
 
 class Platform:
@@ -32,17 +39,18 @@ class Platform:
             output += "".join(row) + "\n"
         return output
     
-    def cycle(self) -> None:
+    def cycle(self) -> bool:
         h = self.__rowhash()
         if h in self.cyclecache:
             self.rows = self.cyclecache[h]
             self.cachehits += 1
-            return
+            return True
         self.tilt_north()
         self.tilt_west()
         self.tilt_south()
         self.tilt_east()
         self.cyclecache[h] = self.__copy()
+        return False
             
     def tilt_north(self) -> None:
         for i in range(self.col_count):
@@ -124,4 +132,4 @@ assert(value == 110821)
 value = solve_part2(sample)
 assert(value == 64)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == 83516)
