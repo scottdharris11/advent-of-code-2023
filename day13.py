@@ -18,7 +18,8 @@ def solve_part2(lines: list):
     return total
 
 class Pattern:
-    def __init__(self, lines) -> None:
+    def __init__(self, lines, id) -> None:
+        self.id = id
         self.rows = []
         for line in lines:
             self.rows.append(list(line))
@@ -39,12 +40,8 @@ class Pattern:
                     
                     self.rows[i][j] = replace
                     self.cols[j][i] = replace
-                    vertical, r = self.__reflection_point(self.cols)
-                    if j < r[0] or j > r[1]:
-                        vertical = 0
-                    horitzontal, r = self.__reflection_point(self.rows)
-                    if i < r[0] or i > r[1]:
-                        horitzontal = 0
+                    vertical = self.__reflection_point(self.cols, j)
+                    horitzontal = self.__reflection_point(self.rows, i)
                     self.rows[i][j] = orig
                     self.cols[j][i] = orig
                     if horitzontal > 0 or vertical > 0:
@@ -52,8 +49,8 @@ class Pattern:
                 if horitzontal > 0 or vertical > 0:
                     break
         else:
-            vertical, _ = self.__reflection_point(self.cols)
-            horitzontal, _ = self.__reflection_point(self.rows)
+            vertical = self.__reflection_point(self.cols, None)
+            horitzontal = self.__reflection_point(self.rows, None)
         t = vertical
         t += horitzontal * 100
         return t
@@ -67,16 +64,21 @@ class Pattern:
             cols.append(c)
         return cols
         
-    def __reflection_point(self, rows: list[str]) -> (int, tuple[int]):
+    def __reflection_point(self, rows: list[str], smudgeIdx: int) -> int:
         l = len(rows)
         for i in range(1, l, 2):
-            if self.__reflection(rows[i:]):
-                return int((l-i) / 2) + i, (i, l-1)
+            if self.__reflection(rows[i:]) and self.__inrange((i, l-1), smudgeIdx):
+                return int((l-i) / 2) + i
         for i in range(1, l, 2):
-            if self.__reflection(rows[:l-i]):
-                return int((l-i) / 2), (0, l-i-1)
-        return 0, (-1, l)
-                        
+            if self.__reflection(rows[:l-i]) and self.__inrange((0, l-i-1), smudgeIdx):
+                return int((l-i) / 2)
+        return 0
+    
+    def __inrange(self, r: tuple[int], idx: int) -> True:
+        if idx == None:
+            return True
+        return idx >= r[0] and idx <= r[1]
+    
     def __reflection(self, lines: list[str]) -> bool:
         t = 0
         b = len(lines) - 1
@@ -92,10 +94,12 @@ def parse_patterns(lines: list[str]) -> list[Pattern]:
     input.append("")
     patterns = []
     pStart = 0
+    id = 1
     for i, line in enumerate(input):
         if line == "":
-            patterns.append(Pattern(lines[pStart:i]))
+            patterns.append(Pattern(lines[pStart:i], id))
             pStart = i+1
+            id += 1
             continue
     return patterns
 
@@ -112,4 +116,4 @@ assert(value == 30575)
 value = solve_part2(sample)
 assert(value == 400)
 value = solve_part2(input)
-assert(value > 33944)
+assert(value == 37478)
