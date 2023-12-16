@@ -164,8 +164,8 @@ def first_location(a: Almanac, seed_ranges: list[tuple[int, int]]) -> int:
     return -1
 
 # Part 1
-input = read_lines("input/day5-input.txt")
-sample = read_lines("input/day5-sample.txt")
+input = read_lines("input/day05/input.txt")
+sample = read_lines("input/day05/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 35)

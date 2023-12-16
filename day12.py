@@ -83,8 +83,8 @@ def possible(r: Record, placement: tuple[int]) -> bool:
     return damageCnt == 0 or damageCnt == r.pattern[-1]
 
 # Part 1
-input = read_lines("input/day12-input.txt")
-sample = read_lines("input/day12-sample.txt")
+input = read_lines("input/day12/input.txt")
+sample = read_lines("input/day12/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 21)

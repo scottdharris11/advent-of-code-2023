@@ -29,8 +29,8 @@ def prev_next_values(values: list[int]) -> (int, int):
     return values[0] - po,  values[-1] + pn
 
 # Part 1
-input = read_lines("input/day9-input.txt")
-sample = read_lines("input/day9-sample.txt")
+input = read_lines("input/day09/input.txt")
+sample = read_lines("input/day09/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 114)

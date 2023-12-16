@@ -64,8 +64,8 @@ def sum_distances(u: Universe) -> int:
     return total
 
 # Part 1
-input = read_lines("input/day11-input.txt")
-sample = read_lines("input/day11-sample.txt")
+input = read_lines("input/day11/input.txt")
+sample = read_lines("input/day11/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 374)

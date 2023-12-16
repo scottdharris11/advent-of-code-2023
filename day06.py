@@ -38,8 +38,8 @@ def record_breaking_options(time: int, record: int) -> int:
     return max_hold - min_hold + 1
 
 # Part 1
-input = read_lines("input/day6-input.txt")
-sample = read_lines("input/day6-sample.txt")
+input = read_lines("input/day06/input.txt")
+sample = read_lines("input/day06/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 288)

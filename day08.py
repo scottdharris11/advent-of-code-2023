@@ -65,9 +65,9 @@ class Map:
         return n[1]
 
 # Part 1
-input = read_lines("input/day8-input.txt")
-sample = read_lines("input/day8-sample.txt")
-sample2 = read_lines("input/day8-sample2.txt")
+input = read_lines("input/day08/input.txt")
+sample = read_lines("input/day08/sample.txt")
+sample2 = read_lines("input/day08/sample2.txt")
 
 value = solve_part1(sample)
 assert(value == 2)
@@ -77,7 +77,7 @@ value = solve_part1(input)
 assert(value == 22357)
 
 # Part 2
-sample3 = read_lines("input/day8-sample3.txt")
+sample3 = read_lines("input/day08/sample3.txt")
 value = solve_part2(sample3)
 assert(value == 6)
 value = solve_part2(input)

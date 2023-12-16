@@ -90,7 +90,7 @@ class Part:
         self.end = end
     
 # Part 1
-input = read_lines("input/day3-input.txt")
+input = read_lines("input/day03/input.txt")
 sample = [
     "467..114..",
     "...*......",

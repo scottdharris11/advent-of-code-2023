@@ -101,8 +101,8 @@ def winnings(hands: list[Hand]) -> int:
     return total
 
 # Part 1
-input = read_lines("input/day7-input.txt")
-sample = read_lines("input/day7-sample.txt")
+input = read_lines("input/day07/input.txt")
+sample = read_lines("input/day07/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 6440)

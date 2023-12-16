@@ -104,8 +104,8 @@ def parse_patterns(lines: list[str]) -> list[Pattern]:
     return patterns
 
 # Part 1
-input = read_lines("input/day13-input.txt")
-sample = read_lines("input/day13-sample.txt")
+input = read_lines("input/day13/input.txt")
+sample = read_lines("input/day13/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 405)

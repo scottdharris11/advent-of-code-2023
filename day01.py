@@ -43,7 +43,7 @@ def digit(s: str):
     return s
 
 # Part 1
-input = read_lines("input/day1-input.txt")
+input = read_lines("input/day01/input.txt")
 sample = [
     "1abc2",
     "pqr3stu8vwx",

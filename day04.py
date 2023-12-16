@@ -54,7 +54,7 @@ class Card:
             return range(self.id+1, self.id+1+m)
 
 # Part 1
-input = read_lines("input/day4-input.txt")
+input = read_lines("input/day04/input.txt")
 sample = [
     "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53",
     "Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19",
