@@ -34,7 +34,7 @@ class Contraption:
         self.col_count = len(grid[0])
         self.beams = [Beam(-1, 0, RIGHT)]
         self.energized = set()
-        self.last_energy_change = 0
+        self.energy_direction = set()
     
     def __repr__(self) -> str:
         sb = "\n"
@@ -50,32 +50,32 @@ class Contraption:
         return sb
     
     def energize(self) -> bool:
-        energized_before = len(self.energized)
-        moving = False
+        energy_before = len(self.energy_direction)
+        stopped_idxs = []
         for i in range(len(self.beams)):
             beam = self.beams[i]
+            stopped = False
             if beam.moving == RIGHT:
-                self.__move_beam_right(beam)
+                stopped = self.__move_beam_right(beam)
             elif beam.moving == LEFT:
-                self.__move_beam_left(beam)
+                stopped = self.__move_beam_left(beam)
             elif beam.moving == UP:
-                self.__move_beam_up(beam)
+                stopped = self.__move_beam_up(beam)
             elif beam.moving == DOWN:
-                self.__move_beam_down(beam)
-            if beam.moving != STOPPED:
-                moving = True
-        
-        self.last_energy_change += 1
-        if len(self.energized) > energized_before:
-            self.last_energy_change = 0
-        return moving and self.last_energy_change < 100
+                stopped = self.__move_beam_down(beam)
+            if stopped:
+                stopped_idxs.append(i)
+        for i in range(len(stopped_idxs)-1, -1, -1):
+            self.beams.pop(stopped_idxs[i])
+        return len(self.energy_direction) != energy_before
     
-    def __move_beam_right(self, b: Beam) -> None:
+    def __move_beam_right(self, b: Beam) -> bool:
         if b.x + 1 == self.col_count:
             b.moving = STOPPED
-            return
+            return True
         b.x += 1
         self.energized.add((b.x, b.y))
+        self.energy_direction.add((b.x, b.y, b.moving))
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = UP
@@ -84,13 +84,15 @@ class Contraption:
         elif type == "|":
             b.moving = DOWN
             self.beams.append(Beam(b.x, b.y, UP))
+        return False
         
-    def __move_beam_left(self, b: Beam) -> None:
+    def __move_beam_left(self, b: Beam) -> bool:
         if b.x - 1 < 0:
             b.moving = STOPPED
-            return
+            return True
         b.x -= 1
         self.energized.add((b.x, b.y))
+        self.energy_direction.add((b.x, b.y, b.moving))
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = DOWN
@@ -99,13 +101,15 @@ class Contraption:
         elif type == "|":
             b.moving = DOWN
             self.beams.append(Beam(b.x, b.y, UP))
+        return False
 
-    def __move_beam_up(self, b: Beam) -> None:
+    def __move_beam_up(self, b: Beam) -> bool:
         if b.y - 1 < 0:
             b.moving = STOPPED
-            return
+            return True
         b.y -= 1
         self.energized.add((b.x, b.y))
+        self.energy_direction.add((b.x, b.y, b.moving))
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = RIGHT
@@ -114,13 +118,15 @@ class Contraption:
         elif type == "-":
             b.moving = RIGHT
             self.beams.append(Beam(b.x, b.y, LEFT))
+        return False
     
-    def __move_beam_down(self, b: Beam) -> None:
+    def __move_beam_down(self, b: Beam) -> bool:
         if b.y + 1 == self.row_count:
             b.moving = STOPPED
-            return
+            return True
         b.y += 1
         self.energized.add((b.x, b.y))
+        self.energy_direction.add((b.x, b.y, b.moving))
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = LEFT
@@ -129,6 +135,7 @@ class Contraption:
         elif type == "-":
             b.moving = RIGHT
             self.beams.append(Beam(b.x, b.y, LEFT))
+        return False
 
 # Part 1
 input = read_lines("input/day16/input.txt")
