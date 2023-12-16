@@ -16,7 +16,6 @@ RIGHT = "R"
 LEFT = "L"
 UP = "U"
 DOWN = "D"
-STOPPED = "S"
 
 class Beam:
     def __init__(self, x: int, y: int, dir: str) -> None:
@@ -51,31 +50,35 @@ class Contraption:
     
     def energize(self) -> bool:
         energy_before = len(self.energy_direction)
-        stopped_idxs = []
+        prune_idxs = []
         for i in range(len(self.beams)):
             beam = self.beams[i]
-            stopped = False
+            prune = False
             if beam.moving == RIGHT:
-                stopped = self.__move_beam_right(beam)
+                prune = self.__move_beam_right(beam)
             elif beam.moving == LEFT:
-                stopped = self.__move_beam_left(beam)
+                prune = self.__move_beam_left(beam)
             elif beam.moving == UP:
-                stopped = self.__move_beam_up(beam)
+                prune = self.__move_beam_up(beam)
             elif beam.moving == DOWN:
-                stopped = self.__move_beam_down(beam)
-            if stopped:
-                stopped_idxs.append(i)
-        for i in range(len(stopped_idxs)-1, -1, -1):
-            self.beams.pop(stopped_idxs[i])
+                prune = self.__move_beam_down(beam)
+            if prune:
+                prune_idxs.append(i)
+        for i in range(len(prune_idxs)-1, -1, -1):
+            self.beams.pop(prune_idxs[i])
         return len(self.energy_direction) != energy_before
     
     def __move_beam_right(self, b: Beam) -> bool:
         if b.x + 1 == self.col_count:
-            b.moving = STOPPED
             return True
         b.x += 1
+        
+        locdir = (b.x, b.y, b.moving)
+        if locdir in self.energy_direction:
+            return True
         self.energized.add((b.x, b.y))
-        self.energy_direction.add((b.x, b.y, b.moving))
+        self.energy_direction.add(locdir)
+        
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = UP
@@ -88,11 +91,15 @@ class Contraption:
         
     def __move_beam_left(self, b: Beam) -> bool:
         if b.x - 1 < 0:
-            b.moving = STOPPED
             return True
         b.x -= 1
+        
+        locdir = (b.x, b.y, b.moving)
+        if locdir in self.energy_direction:
+            return True
         self.energized.add((b.x, b.y))
-        self.energy_direction.add((b.x, b.y, b.moving))
+        self.energy_direction.add(locdir)
+        
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = DOWN
@@ -105,11 +112,15 @@ class Contraption:
 
     def __move_beam_up(self, b: Beam) -> bool:
         if b.y - 1 < 0:
-            b.moving = STOPPED
             return True
         b.y -= 1
+        
+        locdir = (b.x, b.y, b.moving)
+        if locdir in self.energy_direction:
+            return True
         self.energized.add((b.x, b.y))
-        self.energy_direction.add((b.x, b.y, b.moving))
+        self.energy_direction.add(locdir)
+        
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = RIGHT
@@ -122,11 +133,15 @@ class Contraption:
     
     def __move_beam_down(self, b: Beam) -> bool:
         if b.y + 1 == self.row_count:
-            b.moving = STOPPED
             return True
         b.y += 1
+        
+        locdir = (b.x, b.y, b.moving)
+        if locdir in self.energy_direction:
+            return True
         self.energized.add((b.x, b.y))
-        self.energy_direction.add((b.x, b.y, b.moving))
+        self.energy_direction.add(locdir)
+        
         type = self.grid[b.y][b.x]
         if type == '/':
             b.moving = LEFT
