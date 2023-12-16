@@ -3,14 +3,25 @@ from utilities.runner import Runner
 
 @Runner("Day 16", "Part 1")
 def solve_part1(lines: list):
-    c = Contraption(lines)
+    c = Contraption(lines, Beam(-1, 0, RIGHT))
     while c.energize():
         pass
     return len(c.energized)
 
 @Runner("Day 16", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    row_count = len(lines)
+    col_count = len(lines[0])
+    min = row_count * col_count + 1
+    for y in range(row_count):
+        for x in range(col_count):
+            if x == 0:
+                print(Beam(x-1, y, RIGHT))
+                print(Beam(col_count, y, LEFT))
+            if y == 0:
+                print(Beam(x, y-1, DOWN))
+                print(Beam(x, row_count, UP))
+    return 0            
 
 RIGHT = "R"
 LEFT = "L"
@@ -27,11 +38,11 @@ class Beam:
         return str((self.x, self.y, self.moving))
     
 class Contraption:
-    def __init__(self, grid: list[str]) -> None:
+    def __init__(self, grid: list[str], initbeam: Beam) -> None:
         self.grid = grid
         self.row_count = len(grid)
         self.col_count = len(grid[0])
-        self.beams = [Beam(-1, 0, RIGHT)]
+        self.beams = [initbeam]
         self.energized = set()
         self.energy_direction = set()
     
@@ -159,7 +170,7 @@ sample = read_lines("input/day16/sample.txt")
 value = solve_part1(sample)
 assert(value == 46)
 value = solve_part1(input)
-assert(value == -1)
+assert(value == 8146)
 
 # Part 2
 value = solve_part2(sample)
