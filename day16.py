@@ -3,25 +3,22 @@ from utilities.runner import Runner
 
 @Runner("Day 16", "Part 1")
 def solve_part1(lines: list):
-    c = Contraption(lines, Beam(-1, 0, RIGHT))
-    while c.energize():
-        pass
-    return len(c.energized)
+    return energize_tiles(lines, Beam(-1, 0, RIGHT))
 
 @Runner("Day 16", "Part 2")
 def solve_part2(lines: list):
     row_count = len(lines)
     col_count = len(lines[0])
-    min = row_count * col_count + 1
+    value = 0
     for y in range(row_count):
         for x in range(col_count):
             if x == 0:
-                print(Beam(x-1, y, RIGHT))
-                print(Beam(col_count, y, LEFT))
+                value = max(value, energize_tiles(lines, Beam(x-1, y, RIGHT)))
+                value = max(value, energize_tiles(lines, Beam(col_count, y, LEFT)))
             if y == 0:
-                print(Beam(x, y-1, DOWN))
-                print(Beam(x, row_count, UP))
-    return 0            
+                value = max(value, energize_tiles(lines, Beam(x, y-1, DOWN)))
+                value = max(value, energize_tiles(lines, Beam(x, row_count, UP)))
+    return value
 
 RIGHT = "R"
 LEFT = "L"
@@ -36,6 +33,12 @@ class Beam:
         
     def __repr__(self) -> str:
         return str((self.x, self.y, self.moving))
+
+def energize_tiles(lines: list, start: Beam) -> int:
+    c = Contraption(lines, start)
+    while c.energize():
+        pass
+    return len(c.energized)
     
 class Contraption:
     def __init__(self, grid: list[str], initbeam: Beam) -> None:
@@ -174,6 +177,6 @@ assert(value == 8146)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == 51)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == 8358)
