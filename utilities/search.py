@@ -44,6 +44,9 @@ class SearchSolution:
     def __init__(self, cost: int, path) -> None:
         self.cost = cost
         self.path = path
+    
+    def __repr__(self) -> str:
+        return str((self.cost, self.path))
 
 class Search:
     def __init__(self, searcher: Searcher) -> None:
