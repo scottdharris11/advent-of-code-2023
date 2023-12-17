@@ -25,6 +25,14 @@ LEFT = "L"
 UP = "U"
 DOWN = "D"
 
+MOVES = {
+    '.': {RIGHT: [RIGHT], LEFT: [LEFT], UP: [UP], DOWN: [DOWN]},
+    '/': {RIGHT: [UP], LEFT: [DOWN], UP: [RIGHT], DOWN: [LEFT]},
+    '\\': {RIGHT: [DOWN], LEFT: [UP], UP: [LEFT], DOWN: [RIGHT]},
+    '|': {RIGHT: [DOWN, UP], LEFT: [DOWN, UP], UP: [UP], DOWN: [DOWN]},
+    '-': {RIGHT: [RIGHT], LEFT: [LEFT], UP: [RIGHT, LEFT], DOWN: [RIGHT, LEFT]}
+}
+
 class Beam:
     def __init__(self, x: int, y: int, dir: str) -> None:
         self.x = x
@@ -69,23 +77,27 @@ class Contraption:
             beam = self.beams[i]
             prune = False
             if beam.moving == RIGHT:
-                prune = self.__move_beam_right(beam)
+                prune = self.__move_beam(beam, 1, 0)
             elif beam.moving == LEFT:
-                prune = self.__move_beam_left(beam)
+                prune = self.__move_beam(beam, -1, 0)
             elif beam.moving == UP:
-                prune = self.__move_beam_up(beam)
+                prune = self.__move_beam(beam, 0, -1)
             elif beam.moving == DOWN:
-                prune = self.__move_beam_down(beam)
+                prune = self.__move_beam(beam, 0, 1)
             if prune:
                 prune_idxs.append(i)
         for i in range(len(prune_idxs)-1, -1, -1):
             self.beams.pop(prune_idxs[i])
         return len(self.energy_direction) != energy_before
     
-    def __move_beam_right(self, b: Beam) -> bool:
-        if b.x + 1 == self.col_count:
+    def __move_beam(self, b: Beam, xOffset: int, yOffset: int) -> bool:
+        if ( b.x + xOffset < 0 or
+            b.x + xOffset == self.col_count or 
+            b.y + yOffset < 0 or
+            b.y + yOffset == self.row_count ):
             return True
-        b.x += 1
+        b.x += xOffset
+        b.y += yOffset
         
         locdir = (b.x, b.y, b.moving)
         if locdir in self.energy_direction:
@@ -94,77 +106,10 @@ class Contraption:
         self.energy_direction.add(locdir)
         
         type = self.grid[b.y][b.x]
-        if type == '/':
-            b.moving = UP
-        elif type == '\\':
-            b.moving = DOWN
-        elif type == "|":
-            b.moving = DOWN
-            self.beams.append(Beam(b.x, b.y, UP))
-        return False
-        
-    def __move_beam_left(self, b: Beam) -> bool:
-        if b.x - 1 < 0:
-            return True
-        b.x -= 1
-        
-        locdir = (b.x, b.y, b.moving)
-        if locdir in self.energy_direction:
-            return True
-        self.energized.add((b.x, b.y))
-        self.energy_direction.add(locdir)
-        
-        type = self.grid[b.y][b.x]
-        if type == '/':
-            b.moving = DOWN
-        elif type == '\\':
-            b.moving = UP
-        elif type == "|":
-            b.moving = DOWN
-            self.beams.append(Beam(b.x, b.y, UP))
-        return False
-
-    def __move_beam_up(self, b: Beam) -> bool:
-        if b.y - 1 < 0:
-            return True
-        b.y -= 1
-        
-        locdir = (b.x, b.y, b.moving)
-        if locdir in self.energy_direction:
-            return True
-        self.energized.add((b.x, b.y))
-        self.energy_direction.add(locdir)
-        
-        type = self.grid[b.y][b.x]
-        if type == '/':
-            b.moving = RIGHT
-        elif type == '\\':
-            b.moving = LEFT
-        elif type == "-":
-            b.moving = RIGHT
-            self.beams.append(Beam(b.x, b.y, LEFT))
-        return False
-    
-    def __move_beam_down(self, b: Beam) -> bool:
-        if b.y + 1 == self.row_count:
-            return True
-        b.y += 1
-        
-        locdir = (b.x, b.y, b.moving)
-        if locdir in self.energy_direction:
-            return True
-        self.energized.add((b.x, b.y))
-        self.energy_direction.add(locdir)
-        
-        type = self.grid[b.y][b.x]
-        if type == '/':
-            b.moving = LEFT
-        elif type == '\\':
-            b.moving = RIGHT
-        elif type == "-":
-            b.moving = RIGHT
-            self.beams.append(Beam(b.x, b.y, LEFT))
-        return False
+        directions = MOVES[type][b.moving]
+        b.moving = directions[0]
+        for i in range(1, len(directions)):
+            self.beams.append(Beam(b.x, b.y, directions[i]))
 
 # Part 1
 input = read_lines("input/day16/input.txt")
