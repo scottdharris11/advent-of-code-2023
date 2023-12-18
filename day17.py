@@ -124,7 +124,7 @@ class UltraCrucibleState(CrucibleState):
         consecutive = 1
         if dir == last:
             consecutive = self.times + 1
-        if consecutive == 10:
+        if consecutive > 10:
             return False
             
         # must be able to do at least four blocks
@@ -182,4 +182,4 @@ assert(value == 94)
 value = solve_part2(sample2)
 assert(value == 71)
 value = solve_part2(input)
-assert(value < 934)
+assert(value == 904)
