@@ -16,6 +16,7 @@ def solve_part2(lines: list):
     for line in lines:
         s = line.split(" ")
         r = Record(s[0], parse_integers(s[1], ","))
+        #r.unfold()
         possible = possibilities(r)
         total += possible
     return total
@@ -37,6 +38,18 @@ class Record:
                 if count == i:
                     return si
                 count += 1
+    
+    def unfold(self) -> None:
+        nmask = self.mask
+        npattern = self.pattern[:]
+        for _ in range(4):
+            nmask += "?"
+            nmask += self.mask
+            npattern.extend(self.pattern[:])
+        self.mask = nmask
+        self.pattern = npattern
+        self.unknown = nmask.count('?')
+        self.damagedtofill = sum(npattern) - nmask.count('#')
 
 def possibilities(r: Record) -> int:
     if r.damagedtofill == 0:
@@ -60,6 +73,7 @@ def fill(r: Record, filled: tuple[int], idx: int, placements: list):
         fill(r, tuple(f), i, placements)
 
 def possible(r: Record, placement: tuple[int]) -> bool:
+    print((r, placement))
     if len(placement) > r.damagedtofill:
         return False
     damageCnt, damageIdx, placed = 0, 0, 0
