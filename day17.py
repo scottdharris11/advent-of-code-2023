@@ -96,12 +96,14 @@ class CrucibleState:
             return False
         return True
     
-    def state_for_move(self, dir: tuple[int]) -> "CrucibleState":
+    def move(self, dir: tuple[int], city: City) -> SearchMove:
         npoint = (self.point[0] + dir[0], self.point[1] + dir[1])
         ntimes = 1
         if self.lastdir == dir:
             ntimes += self.times
-        return CrucibleState(npoint, dir, ntimes)
+        nstate = CrucibleState(npoint, dir, ntimes)
+        cost = city.heat_cost(npoint)
+        return SearchMove(cost, nstate)
 
 class UltraCrucibleState(CrucibleState):
     def move_valid(self, dir: tuple[int], city: City) -> bool:
@@ -139,12 +141,21 @@ class UltraCrucibleState(CrucibleState):
             p = (p[0] + dir[0], p[1] + dir[1])
         return possible
     
-    def state_for_move(self, dir: tuple[int]) -> "UltraCrucibleState":
-        npoint = (self.point[0] + dir[0], self.point[1] + dir[1])
-        ntimes = 1
-        if self.lastdir == dir:
-            ntimes += self.times
-        return UltraCrucibleState(npoint, dir, ntimes)
+    def move(self, dir: tuple[int], city: City) -> SearchMove:
+        xtimes = 1
+        ntimes = self.times + 1
+        if dir != self.lastdir:
+            xtimes = 4
+            ntimes = 4
+        npoint = (self.point[0] + (dir[0]*xtimes), self.point[1] + (dir[1]*xtimes))
+        
+        nstate = UltraCrucibleState(npoint, dir, ntimes)
+        p = self.point
+        cost = 0
+        for _ in range(xtimes):
+            p = (p[0] + dir[0], p[1] + dir[1])
+            cost += city.heat_cost(p)
+        return SearchMove(cost, nstate)
     
 class PathSearcher(Searcher):
     def __init__(self, city: City) -> None:
@@ -158,9 +169,7 @@ class PathSearcher(Searcher):
         possible = self.city.moves_from(state.point)
         for p in possible:
             if state.move_valid(p, self.city):
-                move = state.state_for_move(p)
-                cost = self.city.heat_cost(move.point)
-                moves.add(SearchMove(cost, move))
+                moves.add(state.move(p, self.city))
         return moves
     
     def distance_from_goal(self, state: CrucibleState) -> int:
