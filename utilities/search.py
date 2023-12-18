@@ -29,6 +29,9 @@ class SearchMove:
     def __init__(self, cost: int, state) -> None:
         self.cost = cost
         self.state = state
+    
+    def __repr__(self) -> str:
+        return str((self.cost, self.state))
         
 class Searcher:
     def is_goal(self, obj) -> bool:
