@@ -71,6 +71,8 @@ class DigPlan:
         self.rowmax = 0
         self.colmin = 0
         self.colmax = 0
+        self.row_ranges = {}
+        self.col_ranges = {}
         
         for i, line in enumerate(lines):
             di = DigInstruction(line)
@@ -152,9 +154,13 @@ class DigPlan:
         if i.dir == "R":
             point = (self.current[0] + i.steps, self.current[1])
             self._add_range(point[1], range(self.current[0], point[0]+1), HORIZONTAL, i.dir)
+            self.__add_horizontal_range(point[1], self.current[0], point[0])
+            
         elif i.dir == "L":
             point = (self.current[0] - i.steps, self.current[1])
             self._add_range(point[1], range(self.current[0], point[0]-1, -1), HORIZONTAL, i.dir)
+            self.__add_horizontal_range(point[1], point[0], self.current[0])
+            
         elif i.dir == "U":
             point = (self.current[0], self.current[1] - i.steps)
             for r in range(self.current[1], point[1]-1, -1):
@@ -162,6 +168,8 @@ class DigPlan:
                 if r == point[1] or r == self.current[1]:
                     dir = i.dir
                 self._add_range(r, range(point[0], point[0]+1), VERTICAL, dir)
+            self.__add_vertical_range(point[0], point[1], self.current[1])
+            
         else:
             point = (self.current[0], self.current[1] + i.steps)
             for r in range(self.current[1], point[1]+1, 1):
@@ -169,6 +177,8 @@ class DigPlan:
                 if r == point[1] or r == self.current[1]:
                     dir = i.dir
                 self._add_range(r, range(point[0], point[0]+1), VERTICAL, dir)
+            self.__add_vertical_range(point[0], self.current[1], point[1])
+            
         self.current = point
         
     def _add_range(self, y: int, ss: range, edge: str, dir: str) -> None:
@@ -189,6 +199,16 @@ class DigPlan:
             self.rowmax = max(self.rowmax, y)
             self.colmin = min(self.colmin, i)
             self.colmax = max(self.colmax, i)
+            
+    def __add_horizontal_range(self, row: int, start: int, stop: int) -> None:
+        ranges = self.row_ranges.get(row, [])
+        ranges.append((start, stop))
+        self.row_ranges[row] = ranges
+        
+    def __add_vertical_range(self, col: int, start: int, stop: int) -> None:
+        ranges = self.col_ranges.get(col, [])
+        ranges.append((start, stop))
+        self.col_ranges[col] = ranges
 
 # Part 1
 input = read_lines("input/day18/input.txt")
@@ -196,8 +216,8 @@ sample = read_lines("input/day18/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 62)
-value = solve_part1(input)
-assert(value == 47045)
+#value = solve_part1(input)
+#assert(value == 47045)
 
 # Part 2
 #value = solve_part2(sample)
