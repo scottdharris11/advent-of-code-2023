@@ -1,13 +1,16 @@
+import cProfile
 from utilities.data import read_lines, parse_integers
 from utilities.runner import Runner
 
 @Runner("Day 12", "Part 1")
 def solve_part1(lines: list):
     total = 0
-    for line in lines:
-        s = line.split(" ")
-        r = Record(s[0], parse_integers(s[1], ","))
-        total += possibilities(r)
+    with cProfile.Profile() as pr:
+        for line in lines:
+            s = line.split(" ")
+            r = Record(s[0], parse_integers(s[1], ","))
+            total += possibilities(r)
+    pr.print_stats()
     return total
 
 @Runner("Day 12", "Part 2")
@@ -73,13 +76,12 @@ def fill(r: Record, filled: tuple[int], idx: int, placements: list):
         fill(r, tuple(f), i, placements)
 
 def possible(r: Record, placement: tuple[int]) -> bool:
-    print((r, placement))
-    if len(placement) > r.damagedtofill:
-        return False
+    #print((r, placement))
+    placement_size = len(placement)
     damageCnt, damageIdx, placed = 0, 0, 0
     for i, c in enumerate(r.mask):
         if c == '?':
-            if placed == len(placement) and placed < r.damagedtofill:
+            if placed == placement_size and placed < r.damagedtofill:
                 return damageCnt <= r.pattern[damageIdx]
             c = "."
             if i in placement:
@@ -106,7 +108,7 @@ value = solve_part1(input)
 assert(value == 7221)
 
 # Part 2
-value = solve_part2(sample)
-assert(value == 525152)
-value = solve_part2(input)
-assert(value == -1)
+#value = solve_part2(sample)
+#assert(value == 525152)
+#value = solve_part2(input)
+#assert(value == -1)
