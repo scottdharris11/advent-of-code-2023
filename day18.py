@@ -4,6 +4,8 @@ from utilities.runner import Runner
 @Runner("Day 18", "Part 1")
 def solve_part1(lines: list):
     plan = DigPlan(lines)
+    print(plan.row_ranges)
+    print(plan.col_ranges)
     #print(plan)
     return plan.cubic_meters()
 
@@ -110,24 +112,93 @@ class DigPlan:
             
         return output
     
-    def cubic_meters(self) -> int:
-        cubes = 0
-        for r in range(self.rowmin, self.rowmax+1):
-            for c in range(self.colmin, self.colmax+1):
-                point = (c, r)
-                if point in self.edges:
-                    cubes += 1
-                    continue
-                inside = True
-                for adjust in [[(1, 0), (self.colmax+1, point[1])], [(-1, 0), (self.colmin-1, point[1])], [(0, 1), (point[0], self.rowmax+1)], [(0, -1), (point[0], self.rowmin-1)]]:
-                    edgex = self.__edge_crossings(point, adjust[0], adjust[1])
-                    if edgex == 0 or edgex % 2 == 0:
-                        inside = False
-                        break
-                if inside:
-                    cubes += 1
-        return cubes
+    def vertical(self, row: int, col: int) -> tuple[int]:
+        for r in self.col_ranges[col]:
+            if r[0] == row:
+                return r
     
+    def remove_vertical(self, row: int, col: int) -> None:
+        for i, r in enumerate(self.col_ranges[col]):
+            if r[0] == row:
+                self.col_ranges[col].pop(i)
+                return
+    
+    def replace_vertical(self, row: int, col: int, val: tuple[int]) -> None:
+        for i, r in enumerate(self.col_ranges[col]):
+            if r[0] == row:
+                self.col_ranges[col][i] = val
+                return
+    
+    def cubic_meters(self) -> int:
+        hkeys = []
+        hkeys.extend(self.row_ranges.keys())
+        hkeys.sort()
+        hkeys.reverse()
+        print(hkeys)
+        
+        cubes = 0
+        overlap = 0
+        while len(hkeys) > 0:
+            # Highest horizontal range
+            key = hkeys[-1]
+            hrange = self.row_ranges[key][0]
+            
+            # Get verticals associated and find minimum
+            lvert = self.vertical(key, hrange[0])
+            rvert = self.vertical(key, hrange[1])
+            mvert = lvert
+            mincol = hrange[0]
+            maxcol = hrange[1]
+            if rvert[1] < lvert[1]:
+                mvert = rvert
+                mincol = hrange[1]
+                maxcol = hrange[0]
+            
+            # add to total cubes
+            cubes += (abs(mvert[1] - key) + 1) * (abs(maxcol - mincol) + 1)
+            
+            # locate horizontal associated with shortest vert
+            for i, r in enumerate(self.row_ranges[mvert[1]]):
+                if mincol == r[0] and maxcol == r[1]:
+                    # min and max columns match the horizontal range
+                    # so this is a bottom, remove bottom horizontal
+                    self.row_ranges[mvert[1]].pop(i)
+                    break
+                if mincol == r[0]:
+                    # minimum column is moving to the right...adjust
+                    # range over to the max column
+                    self.row_ranges[mvert[1]][i] = (r[1], maxcol)
+                    overlap += maxcol - r[1] + 1
+                    break
+                elif mincol == r[1]:
+                    # minimum column is moving to the left...extend range
+                    # to the next horizontal column
+                    nhoz = None
+                    nidx = -1
+                    for n, next in enumerate(self.row_ranges[mvert[1]]):
+                        if next[0] > r[1] and (nhoz == None or nhoz[0] > r[1]):
+                            nhoz = next
+                            nidx = n
+                    if nhoz[0] < maxcol:
+                        self.row_ranges[mvert[1]][i] = (r[0], nhoz[0])
+                    else:
+                        self.row_ranges[mvert[1]][i] = (r[0], nhoz[1])
+                    self.row_ranges[mvert[1]].pop(nidx)
+                    overlap += min(maxcol, nhoz[0]) - mincol + 1
+                    break
+                
+            # remove horizontal range(s) and short vertical(s)
+            self.row_ranges[key].pop(0)
+            if len(self.row_ranges[key]) == 0:
+                self.row_ranges.pop(key)
+            
+            self.remove_vertical(key, mincol)
+            if rvert[1] == lvert[1]:
+                self.remove_vertical(key, maxcol)
+            else:
+                self.replace_vertical(key, maxcol, (mincol, maxcol))
+        return cubes - overlap
+                
     def __edge_crossings(self, point: tuple[int], adjust: tuple[int], stop: int):
         crossings = 0
         elbow = ""
