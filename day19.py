@@ -13,7 +13,14 @@ def solve_part1(lines: list):
 
 @Runner("Day 19", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    workflows, parts = parse_input(lines)
+    sorter = Sorter(workflows)
+    wf = sorter.workflow_by_id("in")
+    total = 0
+    init = PartPath({"x":(1,4000), "m":(1,4000), "a": (1,4000), "s": (1,4000)})
+    for apath in wf.acceptable_paths(init, 0, sorter):
+        total += apath.possibilities()
+    return total
 
 class Step:
     def __init__(self, s: str) -> None:
@@ -31,6 +38,40 @@ class Step:
         if self.test == None:
             return True, self.location
         return eval("part." + self.test), self.location
+    
+    def pass_values(self) -> (str, bool, int):
+        return str(self.test[0]), self.test[1] == "<", int(self.test[2:])
+    
+    def fail_values(self) -> (str, bool, int):
+        catg, less, value = self.pass_values()
+        if less:
+            value -= 1
+        else:
+            value += 1
+        return catg, not less, value
+
+class PartPath:
+    def __init__(self, ranges: dict[str,tuple[int]]) -> None:
+        self.ranges = ranges
+        
+    def __repr__(self) -> str:
+        return str((self.xRange, self.mRange, self.aRange, self.sRange))
+    
+    def possibilities(self) -> int:
+        total = 1
+        for r in self.ranges.values():
+            total *= r[1] - r[0] + 1
+        return total
+    
+    def copy(self) -> "PartPath":
+        return PartPath(self.ranges.copy())
+    
+    def adjustRange(self, catg: str, less: bool, value: int):
+        r = self.ranges.get(catg)
+        if less:
+            self.ranges[catg] = (r[0], min(value-1, r[1]))
+        else:
+            self.ranges[catg] = (max(r[0], value+1), r[1])
 
 class Workflow:
     def __init__(self, line: str) -> None:
@@ -48,6 +89,30 @@ class Workflow:
             done, loc = step.execute(part)
             if done:
                 return loc
+            
+    def acceptable_paths(self, input: PartPath, sidx: int, sorter: "Sorter") -> list[PartPath]:
+        step = self.steps[sidx]
+        if step.test == None:
+            if step.location == "R":
+                return []
+            elif step.location == "A":
+                return [input]
+            else:
+                return sorter.workflow_by_id(step.location).acceptable_paths(input, 0, sorter)
+        else:
+            paths = []
+            if step.location != "R":
+                p = input.copy()
+                p.adjustRange(*step.pass_values())
+                if step.location == "A":
+                    paths.append(p)
+                else:
+                    paths.extend(sorter.workflow_by_id(step.location).acceptable_paths(p, 0, sorter))
+            if sidx + 1 < len(self.steps):
+                p = input.copy()
+                p.adjustRange(*step.fail_values())
+                paths.extend(self.acceptable_paths(p, sidx + 1, sorter))
+            return paths
     
 class Part:
     def __init__(self, line: str) -> None:
@@ -80,6 +145,9 @@ class Sorter:
                 return False
             else:
                 w = self.wmap[r]
+                
+    def workflow_by_id(self, id: str) -> Workflow:
+        return self.wmap[id]
 
 def parse_input(lines: list) -> (list[Workflow], list[Part]):
     idx = 0
@@ -104,6 +172,6 @@ assert(value == 425811)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == 167409079868000)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == 131796824371749)
