@@ -1,5 +1,4 @@
-import types
-from typing import Any
+from math import lcm
 from utilities.data import read_lines
 from utilities.runner import Runner
 
@@ -23,7 +22,7 @@ def solve_part1(lines: list):
 @Runner("Day 20", "Part 2")
 def solve_part2(lines: list):
     modules = create_modules(lines)
-    print(modules["rx"])
+    return modules["rx"].inputs[0].low_pulse_cycle_rate()
 
 HIGH_PULSE = 1
 LOW_PULSE = 0
@@ -66,6 +65,9 @@ class Module:
     
     def process_pulse(self, _: Pulse) -> list[Pulse]:
         return []
+    
+    def low_pulse_cycle_rate(self) -> int:
+        return 1
 
 class FlipFlopModule(Module):
     def __init__(self, id: str) -> None:
@@ -84,6 +86,13 @@ class FlipFlopModule(Module):
             send = HIGH_PULSE
         return super().send_pulse(send)
     
+    def low_pulse_cycle_rate(self) -> int:
+        # lcm of each connections low pulse cycle rate x 2
+        rates = []
+        for input in self.inputs:
+            rates.append(input.low_pulse_cycle_rate() * 2)
+        return lcm(*rates)
+    
 class ConjunctionModule(Module):
     def __init__(self, id: str) -> None:
         super().__init__(id)
@@ -94,6 +103,7 @@ class ConjunctionModule(Module):
     
     def add_input(self, i: "Module") -> None:
         self.last[i.id] = LOW_PULSE
+        super().add_input(i)
     
     def process_pulse(self, pulse: Pulse) -> list[Pulse]:
         self.last[pulse.from_id] = pulse.ptype
@@ -103,23 +113,23 @@ class ConjunctionModule(Module):
                 send = HIGH_PULSE
                 break
         return super().send_pulse(send)
+    
+    def low_pulse_cycle_rate(self) -> int:
+        # lcm of each its connection low pulse cycle rate
+        rates = []
+        for input in self.inputs:
+            rates.append(input.low_pulse_cycle_rate())
+        return lcm(*rates)
 
 class BroadcastModule(Module):
     def process_pulse(self, pulse: Pulse) -> list[Pulse]:
         return super().send_pulse(pulse.ptype)
+    
+    def low_pulse_cycle_rate(self) -> int:
+        return 1
 
 class OutputModule(Module):
     pass
-
-class MoverModule(Module):
-    def __init__(self, id: str) -> None:
-        super().__init__(id)
-        self.on = False
-        
-    def process_pulse(self, pulse: Pulse) -> list[Pulse]:
-        if pulse.ptype == LOW_PULSE:
-            self.on = True
-        return []
         
 def create_modules(lines: list[str]) -> dict[str,Module]:
     modules = {}
@@ -140,10 +150,7 @@ def create_modules(lines: list[str]) -> dict[str,Module]:
         for d in pieces[2:]:
             d = d.replace(",", "")
             if d not in modules:
-                if d == "rx":
-                    modules[d] = MoverModule(d)
-                else:
-                    modules[d] = OutputModule(d)
+                modules[d] = OutputModule(d)
             modules[id].add_destination(modules[d])
             modules[d].add_input(modules[id])
     
@@ -162,5 +169,7 @@ value = solve_part1(input)
 assert(value == 818723272)
 
 # Part 2
-value = solve_part2(input)
-assert(value == -1)
+value = solve_part2(sample2)
+assert(value == 4)
+#value = solve_part2(input)
+#assert(value == -1)
