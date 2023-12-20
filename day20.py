@@ -22,7 +22,44 @@ def solve_part1(lines: list):
 @Runner("Day 20", "Part 2")
 def solve_part2(lines: list):
     modules = create_modules(lines)
-    return modules["rx"].inputs[0].low_pulse_cycle_rate()
+    
+    # register sniffer modules to track inputs into last module
+    # before output which is a conjunction module
+    sniffers = []
+    for input in modules["rx"].inputs[0].inputs:
+        sm = SnifferModule(input.id + "-sniffer")
+        modules[sm.id] = sm
+        sniffers.append(sm)
+        input.add_destination(sm)
+        print(input)
+        
+    # run cycles until we find the min cycle for each sniffer
+    # where it produced saw high output
+    cycle_cnt = 0
+    sniffer_checks = {}
+    while True:
+        cycle_cnt += 1
+        queue = [Pulse("button", "broadcaster", LOW_PULSE)]
+        while len(queue) != 0:
+            pulse = queue[0]
+            queue.extend(modules[pulse.to_id].process_pulse(pulse))
+            queue.pop(0)
+        
+        done = True
+        for s in sniffers:
+            if cycle_cnt == 1:
+                s.sent_high = False
+            elif s.sent_high and s.id not in sniffer_checks:
+                print((s.id, cycle_cnt))
+                sniffer_checks[s.id] = cycle_cnt
+            if s.id not in sniffer_checks:
+                done = False
+            
+        if done:
+            break
+    
+    # least common multiple of sniffer values is convergence point
+    return lcm(*sniffer_checks.values())
 
 HIGH_PULSE = 1
 LOW_PULSE = 0
@@ -66,9 +103,6 @@ class Module:
     def process_pulse(self, _: Pulse) -> list[Pulse]:
         return []
     
-    def low_pulse_cycle_rate(self) -> int:
-        return 1
-
 class FlipFlopModule(Module):
     def __init__(self, id: str) -> None:
         super().__init__(id)
@@ -85,14 +119,7 @@ class FlipFlopModule(Module):
         if self.on:
             send = HIGH_PULSE
         return super().send_pulse(send)
-    
-    def low_pulse_cycle_rate(self) -> int:
-        # lcm of each connections low pulse cycle rate x 2
-        rates = []
-        for input in self.inputs:
-            rates.append(input.low_pulse_cycle_rate() * 2)
-        return lcm(*rates)
-    
+
 class ConjunctionModule(Module):
     def __init__(self, id: str) -> None:
         super().__init__(id)
@@ -113,24 +140,23 @@ class ConjunctionModule(Module):
                 send = HIGH_PULSE
                 break
         return super().send_pulse(send)
-    
-    def low_pulse_cycle_rate(self) -> int:
-        # lcm of each its connection low pulse cycle rate
-        rates = []
-        for input in self.inputs:
-            rates.append(input.low_pulse_cycle_rate())
-        return lcm(*rates)
 
 class BroadcastModule(Module):
     def process_pulse(self, pulse: Pulse) -> list[Pulse]:
         return super().send_pulse(pulse.ptype)
-    
-    def low_pulse_cycle_rate(self) -> int:
-        return 1
 
 class OutputModule(Module):
     pass
+
+class SnifferModule(Module):
+    def __init__(self, id: str) -> None:
+        super().__init__(id)
+        self.sent_high = False
         
+    def process_pulse(self, pulse: Pulse) -> list[Pulse]:
+        self.sent_high = pulse.ptype == HIGH_PULSE
+        return []
+
 def create_modules(lines: list[str]) -> dict[str,Module]:
     modules = {}
     for line in lines:
@@ -170,6 +196,6 @@ assert(value == 818723272)
 
 # Part 2
 value = solve_part2(sample2)
-assert(value == 4)
-#value = solve_part2(input)
-#assert(value == -1)
+assert(value == 15)
+value = solve_part2(input)
+assert(value == -1)
