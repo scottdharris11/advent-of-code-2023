@@ -4,63 +4,67 @@ from utilities.runner import Runner
 @Runner("Day 21", "Part 1")
 def solve_part1(lines: list, steps: int):
     m = Map(lines)
-    before = [m.start]
     for _ in range(steps):
-        after = set()
-        for b in before:
-            after.update(m.moves_from(b))
-        before.clear()
-        before.extend(after)
-    return len(before)
+        m.step()
+    return m.possible_locations()
 
 @Runner("Day 21", "Part 2")
 def solve_part2(lines: list, steps: int):
     m = Map(lines)
-    before = [m.start]
     for _ in range(steps):
-        after = set()
-        for b in before:
-            after.update(m.moves_from(b))
-        before.clear()
-        before.extend(after)
-    return len(before)
+        m.step()
+    return m.possible_locations()
 
 class Map:
     def __init__(self, lines: list) -> None:
         self.grid = lines
         self.row_count = len(lines)
         self.col_count = len(lines[0])
+        self.locations = [[0 for _ in range(self.col_count)] for _ in range(self.row_count)]
         for y, row in enumerate(self.grid):
             for x, col in enumerate(row):
                 if col == "S":
-                    self.start = (x, y, 0, 0)
+                    self.locations[y][x] = 1
                     return
     
-    def moves_from(self, current: tuple[int]) -> list[tuple[int]]:
-        moves = []
-        for move in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            nx = current[0] + move[0]
-            ny = current[1] + move[1]
-            mx = current[2]
-            my = current[3]
-            
-            if nx < 0:
-                mx -= 1
-                nx = self.col_count - 1
-            elif nx == self.col_count:
-                mx += 1
-                nx = 0
-            if ny < 0:
-                my -= 1
-                ny = self.row_count - 1
-            elif ny == self.row_count:
-                my += 1
-                ny = 0
-            
-            if self.grid[ny][nx] == "#":
-                continue
-            moves.append((nx, ny, mx, my))
-        return moves
+    def step(self) -> None:
+        nlocs = [[0 for _ in range(self.col_count)] for _ in range(self.row_count)]
+        for y, row in enumerate(self.locations):
+            for x, col in enumerate(row):
+                if col == 0:
+                    continue
+                for move in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                    nx = x + move[0]
+                    ny = y + move[1]
+                    
+                    if nx < 0:
+                        nx = self.col_count - 1
+                        if self.locations[y][nx] > 0:
+                            continue
+                    elif nx == self.col_count:
+                        nx = 0
+                        if self.locations[y][nx] > 0:
+                            continue
+                    elif ny < 0:
+                        ny = self.row_count - 1
+                        if self.locations[ny][x] > 0:
+                            continue
+                    elif ny == self.row_count:
+                        ny = 0
+                        if self.locations[ny][x] > 0:
+                            continue
+                    
+                    if self.grid[ny][nx] == "#":
+                        continue
+                    nlocs[ny][nx] = 1 * col
+        self.locations = nlocs
+        
+    def possible_locations(self) -> int:
+        total = 0
+        for row in self.locations:
+            for col in row:
+                total += col
+        return total
 
 # Part 1
 input = read_lines("input/day21/input.txt")
