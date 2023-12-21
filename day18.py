@@ -4,33 +4,11 @@ from utilities.runner import Runner
 @Runner("Day 18", "Part 1")
 def solve_part1(lines: list):
     plan = DigPlan(lines)
-    print(plan.row_ranges)
-    print(plan.col_ranges)
-    #print(plan)
     return plan.cubic_meters()
 
 @Runner("Day 18", "Part 2")
 def solve_part2(lines: list):
     return -1
-
-RIGHT = 'R'
-LEFT = 'L'
-UP = 'U'
-DOWN = 'D'
-START = 'S'
-VERTICAL = '|'
-HORIZONTAL = "-"
-NORTH_TO_EAST = "L"
-NORTH_TO_WEST = "J"
-SOUTH_TO_WEST = "7"
-SOUTH_TO_EAST = "F"
-
-JOINT_MAPPINGS = {
-    DOWN : { DOWN: VERTICAL, UP : VERTICAL, RIGHT: NORTH_TO_EAST, LEFT : NORTH_TO_WEST },
-    UP : { DOWN: VERTICAL, UP : VERTICAL, RIGHT : SOUTH_TO_EAST, LEFT : SOUTH_TO_WEST },
-    RIGHT : { DOWN : SOUTH_TO_WEST, UP : NORTH_TO_WEST, RIGHT : HORIZONTAL, LEFT : HORIZONTAL },
-    LEFT : { DOWN : SOUTH_TO_EAST, UP : NORTH_TO_EAST, RIGHT : HORIZONTAL, LEFT : HORIZONTAL },
-}
 
 class DigInstruction:
     def __init__(self, line: str) -> None:
@@ -66,21 +44,13 @@ class DigPoint:
 class DigPlan:
     def __init__(self, lines: list[str]) -> None:
         # apply instructions
-        self.current = (0,0)
-        self.edges = {}
-        self.edges[DigPoint(0,0)] = START
-        self.rowmin = 0
-        self.rowmax = 0
-        self.colmin = 0
-        self.colmax = 0
         self.row_ranges = {}
         self.col_ranges = {}
+        self.current = (0,0)
         
         for i, line in enumerate(lines):
             di = DigInstruction(line)
             self.add_instruction(di)
-            if i == 0:
-                self.edges[(0,0)] = di.dir
         
     def __repr__(self) -> str:
         output = ""
@@ -112,10 +82,28 @@ class DigPlan:
             
         return output
     
+    def horizontal(self, row: int, col: int) -> tuple[int]:
+        for r in self.row_ranges[row]:
+            if r[0] == col or r[1] == col:
+                return r
+    
+    def replace_horizontal(self, row: int, col: int, val: tuple[int]) -> None:
+        for i, r in enumerate(self.row_ranges[row]):
+            if r[0] == col or r[1] == col:
+                self.row_ranges[row][i] = val
+                return
+    
+    def remove_horizontal(self, row: int, col: int) -> None:
+        for i, r in enumerate(self.row_ranges[row]):
+            if r[0] == col or r[1] == col:
+                self.row_ranges[row].pop(i)
+                return
+            
     def vertical(self, row: int, col: int) -> tuple[int]:
         for r in self.col_ranges[col]:
             if r[0] == row:
                 return r
+        print("vertical not found at row %d, col %d" % (row, col))
     
     def remove_vertical(self, row: int, col: int) -> None:
         for i, r in enumerate(self.col_ranges[col]):
@@ -146,130 +134,95 @@ class DigPlan:
             # Get verticals associated and find minimum
             lvert = self.vertical(key, hrange[0])
             rvert = self.vertical(key, hrange[1])
-            mvert = lvert
+            minvert = lvert
+            maxvert = rvert
             mincol = hrange[0]
             maxcol = hrange[1]
             if rvert[1] < lvert[1]:
-                mvert = rvert
+                minvert = rvert
+                maxvert = lvert
                 mincol = hrange[1]
                 maxcol = hrange[0]
             
             # add to total cubes
-            cubes += (abs(mvert[1] - key) + 1) * (abs(maxcol - mincol) + 1)
+            cubes += (abs(minvert[1] - key) + 1) * (abs(maxcol - mincol) + 1)
             
             # locate horizontal associated with shortest vert
-            for i, r in enumerate(self.row_ranges[mvert[1]]):
-                if mincol == r[0] and maxcol == r[1]:
+            hoz = self.horizontal(minvert[1], mincol)
+            if minvert[1] == maxvert[1]:
+                if mincol == hoz[0] and maxcol == hoz[1]:
                     # min and max columns match the horizontal range
                     # so this is a bottom, remove bottom horizontal
-                    self.row_ranges[mvert[1]].pop(i)
-                    break
-                if mincol == r[0]:
-                    # minimum column is moving to the right...adjust
-                    # range over to the max column
-                    self.row_ranges[mvert[1]][i] = (r[1], maxcol)
-                    overlap += maxcol - r[1] + 1
-                    break
-                elif mincol == r[1]:
-                    # minimum column is moving to the left...extend range
-                    # to the next horizontal column
-                    nhoz = None
-                    nidx = -1
-                    for n, next in enumerate(self.row_ranges[mvert[1]]):
-                        if next[0] > r[1] and (nhoz == None or nhoz[0] > r[1]):
-                            nhoz = next
-                            nidx = n
-                    if nhoz[0] < maxcol:
-                        self.row_ranges[mvert[1]][i] = (r[0], nhoz[0])
-                    else:
-                        self.row_ranges[mvert[1]][i] = (r[0], nhoz[1])
-                    self.row_ranges[mvert[1]].pop(nidx)
-                    overlap += min(maxcol, nhoz[0]) - mincol + 1
-                    break
+                    self.remove_horizontal(minvert[1], mincol)
+                else:
+                    # verticals are equal, merge left horizontal with right
+                    hoz2 = self.horizontal(maxvert[1], maxcol)
+                    begin = hoz[1]
+                    obegin = hoz[1]
+                    if hoz[0] < mincol:
+                        begin = hoz[0]
+                        obegin = mincol
+                    end = hoz2[1]
+                    oend = maxcol
+                    if hoz2[0] < maxcol:
+                        end = hoz2[0]
+                        oend = hoz2[0]
+                    self.replace_horizontal(minvert[1], mincol, (begin, end))
+                    self.remove_horizontal(maxvert[1], maxcol)
+                    overlap += oend - obegin + 1
+            elif mincol == hoz[0]:
+                # minimum column is moving to the right...adjust
+                # range over to the max column
+                if lvert[1] == minvert[1]:
+                    self.replace_horizontal(minvert[1], mincol, (hoz[1], maxcol))
+                    overlap += maxcol - hoz[1] + 1
+                else:
+                    self.replace_horizontal(minvert[1], mincol, (maxcol, hoz[1]))
+                    overlap += maxcol - mincol + 1
+            elif mincol == hoz[1]:
+                # minimum column is moving to the left...adjust
+                # range over to the max column
+                if lvert[1] == minvert[1]:
+                    self.replace_horizontal(minvert[1], mincol, (hoz[0], maxcol))
+                    overlap += maxcol - hoz[1] + 1
+                else:
+                    self.replace_horizontal(minvert[1], mincol, (maxcol, hoz[0]))
+                    overlap += hoz[0] - maxcol + 1
                 
             # remove horizontal range(s) and short vertical(s)
             self.row_ranges[key].pop(0)
             if len(self.row_ranges[key]) == 0:
                 self.row_ranges.pop(key)
+                hkeys.remove(key)
+            if len(self.row_ranges[minvert[1]]) == 0:
+                self.row_ranges.pop(minvert[1])
+                hkeys.remove(minvert[1])
             
             self.remove_vertical(key, mincol)
             if rvert[1] == lvert[1]:
                 self.remove_vertical(key, maxcol)
             else:
-                self.replace_vertical(key, maxcol, (mincol, maxcol))
+                self.replace_vertical(key, maxcol, (minvert[1], maxvert[1]))
         return cubes - overlap
-                
-    def __edge_crossings(self, point: tuple[int], adjust: tuple[int], stop: int):
-        crossings = 0
-        elbow = ""
-        while point != stop:
-            if point in self.edges:
-                ptype = self.edges[point]
-                if ptype == HORIZONTAL or ptype == VERTICAL:
-                    if elbow == "":
-                        crossings += 1
-                elif elbow == "":
-                    elbow = ptype
-                else:
-                    if ((elbow == SOUTH_TO_WEST and ptype == NORTH_TO_EAST) or 
-                        (elbow == SOUTH_TO_EAST and ptype == NORTH_TO_WEST) or
-                        (elbow == NORTH_TO_EAST and ptype == SOUTH_TO_WEST) or
-                        (elbow == NORTH_TO_WEST and ptype == SOUTH_TO_EAST)):
-                        crossings += 1
-                    elbow = ""
-            point = (point[0] + adjust[0], point[1] + adjust[1])
-        return crossings
-    
+   
     def add_instruction(self, i: DigInstruction) -> None:
         point = None
         if i.dir == "R":
             point = (self.current[0] + i.steps, self.current[1])
-            self._add_range(point[1], range(self.current[0], point[0]+1), HORIZONTAL, i.dir)
             self.__add_horizontal_range(point[1], self.current[0], point[0])
             
         elif i.dir == "L":
             point = (self.current[0] - i.steps, self.current[1])
-            self._add_range(point[1], range(self.current[0], point[0]-1, -1), HORIZONTAL, i.dir)
             self.__add_horizontal_range(point[1], point[0], self.current[0])
             
         elif i.dir == "U":
             point = (self.current[0], self.current[1] - i.steps)
-            for r in range(self.current[1], point[1]-1, -1):
-                dir = VERTICAL
-                if r == point[1] or r == self.current[1]:
-                    dir = i.dir
-                self._add_range(r, range(point[0], point[0]+1), VERTICAL, dir)
             self.__add_vertical_range(point[0], point[1], self.current[1])
             
         else:
             point = (self.current[0], self.current[1] + i.steps)
-            for r in range(self.current[1], point[1]+1, 1):
-                dir = VERTICAL
-                if r == point[1] or r == self.current[1]:
-                    dir = i.dir
-                self._add_range(r, range(point[0], point[0]+1), VERTICAL, dir)
             self.__add_vertical_range(point[0], self.current[1], point[1])
-            
         self.current = point
-        
-    def _add_range(self, y: int, ss: range, edge: str, dir: str) -> None:
-        for i in ss:
-            dp = DigPoint(i, y)
-            if dp in self.edges:
-                prevdir = self.edges[dp]
-                if y == 0 and i == 0:
-                    if prevdir != START:
-                        self.edges[dp] = JOINT_MAPPINGS[dir][prevdir]
-                else:
-                    self.edges[dp] = JOINT_MAPPINGS[prevdir][dir]
-            else:
-                self.edges[dp] = edge
-                if (ss.step == 1 and i == ss.stop - 1) or (ss.step == -1 and i == ss.stop +1):
-                    self.edges[dp] = dir
-            self.rowmin = min(self.rowmin, y)
-            self.rowmax = max(self.rowmax, y)
-            self.colmin = min(self.colmin, i)
-            self.colmax = max(self.colmax, i)
             
     def __add_horizontal_range(self, row: int, start: int, stop: int) -> None:
         ranges = self.row_ranges.get(row, [])
@@ -287,8 +240,8 @@ sample = read_lines("input/day18/sample.txt")
 
 value = solve_part1(sample)
 assert(value == 62)
-#value = solve_part1(input)
-#assert(value == 47045)
+value = solve_part1(input)
+assert(value == 47045)
 
 # Part 2
 #value = solve_part2(sample)
