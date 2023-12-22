@@ -3,30 +3,37 @@ from utilities.runner import Runner
 
 @Runner("Day 18", "Part 1")
 def solve_part1(lines: list):
-    plan = DigPlan(lines)
+    plan = DigPlan(lines, False)
     return plan.cubic_meters()
 
 @Runner("Day 18", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    plan = DigPlan(lines, True)
+    return plan.cubic_meters()
+
+DIR_FROM_HEX = {0: "R", 1: "D", 2: "L", 3: "U"}
 
 class DigInstruction:
-    def __init__(self, line: str) -> None:
+    def __init__(self, line: str, useColor: bool) -> None:
         s = line.split()
-        self.dir = s[0]
-        self.steps = int(s[1])
-        self.color = s[2][1:-1]
+        if useColor:
+            color = s[2][1:-1]
+            self.steps = int(color[1:-1], 16)
+            self.dir = DIR_FROM_HEX[int(color[-1])]
+        else:
+            self.dir = s[0]
+            self.steps = int(s[1])
     
     def __repr__(self) -> str:
-        return str((self.dir, self.steps, self.color))
+        return str((self.dir, self.steps))
 
 class DigPlan:
-    def __init__(self, lines: list[str]) -> None:
+    def __init__(self, lines: list[str], useHex: bool) -> None:
         self.current = (0,0)
         self.vertices = [self.current]
         self.boundary_cubes = 0
         for line in lines:
-            di = DigInstruction(line)
+            di = DigInstruction(line, useHex)
             self.__add_instruction(di)
         
     def cubic_meters(self) -> int:
@@ -75,7 +82,7 @@ value = solve_part1(input)
 assert(value == 47045)
 
 # Part 2
-#value = solve_part2(sample)
-#assert(value == -1)
-#value = solve_part2(input)
-#assert(value == -1)
+value = solve_part2(sample)
+assert(value == 952408144115)
+value = solve_part2(input)
+assert(value == 147839570293376)
