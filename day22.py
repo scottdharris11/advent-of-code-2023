@@ -96,6 +96,8 @@ class World:
             return
         newimpact = []
         for sb in self.supporting[b]:
+            if sb in bricks:
+                continue
             sby = self.supported_by[sb][:]
             for i in sby[:]:
                 if i in bricks:
@@ -113,6 +115,8 @@ class World:
             brick.minZ -= 1
             brick.maxZ -= 1
             for i in range(idx+1,len(self.bricks)):
+                if brick.maxZ < self.bricks[i].minZ or brick.minZ > self.bricks[i].maxZ:
+                    continue
                 if self.__overlap(brick, self.bricks[i]):
                     brick.minZ += 1
                     brick.maxZ += 1
