@@ -51,67 +51,63 @@ class DigPlan:
         for i, line in enumerate(lines):
             di = DigInstruction(line)
             self.add_instruction(di)
-        
-    def __repr__(self) -> str:
-        output = ""
-        
-        columns = abs(self.colmin - self.colmax)
-        colsplit = int(columns / 2) + self.colmin
-        if columns < 40:
-            colsplit = self.colmax + 1
-        
-        for r in range(self.rowmin, self.rowmax+1):
-            for c in range(self.colmin, colsplit):
-                p = (c, r)
-                if p in self.edges:
-                    output += self.edges[p]
-                else:
-                    output += "."
-            output += ">" + str(r) + ">\n"
-            
-        output += "\n\n\n\n"
-        for r in range(self.rowmin, self.rowmax+1):
-            output += ">" + str(r) + ">"
-            for c in range(colsplit, self.colmax+1):
-                p = (c, r)
-                if p in self.edges:
-                    output += self.edges[p]
-                else:
-                    output += "."
-            output += "\n"
-            
-        return output
     
     def horizontal(self, row: int, col: int) -> tuple[int]:
+        print("getting horizontal at row %d, col %d" % (row, col))
         for r in self.row_ranges[row]:
             if r[0] == col or r[1] == col:
                 return r
+        print("horizontal not found at row %d, col %d" % (row, col))
     
     def replace_horizontal(self, row: int, col: int, val: tuple[int]) -> None:
+        print("Replacing horizontal: %s" % str((row, col, val)))
+        if val == (4,322):
+            hkeys = []
+            hkeys.extend(self.row_ranges.keys())
+            hkeys.sort()
+            hkeys.reverse()
+            print("rows")
+            for hkey in hkeys:
+                print("%d: %s"%(hkey, self.row_ranges[hkey]))
+            vkeys = []
+            vkeys.extend(self.col_ranges.keys())
+            vkeys.sort()
+            vkeys.reverse
+            print("cols")
+            for vkey in vkeys:
+                print("%d: %s"%(vkey, self.col_ranges[vkey]))
+            exit()
+        if val[0] > val[1]:
+            exit()
         for i, r in enumerate(self.row_ranges[row]):
             if r[0] == col or r[1] == col:
                 self.row_ranges[row][i] = val
                 return
     
     def remove_horizontal(self, row: int, col: int) -> None:
+        print("Removing horizontal: %s" % str((row, col)))
         for i, r in enumerate(self.row_ranges[row]):
             if r[0] == col or r[1] == col:
                 self.row_ranges[row].pop(i)
                 return
             
     def vertical(self, row: int, col: int) -> tuple[int]:
+        print("getting vertical at row %d, col %d" % (row, col))
         for r in self.col_ranges[col]:
             if r[0] == row:
                 return r
         print("vertical not found at row %d, col %d" % (row, col))
+        print(self.col_ranges[col])
     
     def remove_vertical(self, row: int, col: int) -> None:
+        print("Removing vertical: %s" % str((row, col)))
         for i, r in enumerate(self.col_ranges[col]):
             if r[0] == row:
                 self.col_ranges[col].pop(i)
                 return
     
     def replace_vertical(self, row: int, col: int, val: tuple[int]) -> None:
+        print("Replacing vertical: %s" % str((row, col, val)))
         for i, r in enumerate(self.col_ranges[col]):
             if r[0] == row:
                 self.col_ranges[col][i] = val
@@ -122,18 +118,32 @@ class DigPlan:
         hkeys.extend(self.row_ranges.keys())
         hkeys.sort()
         hkeys.reverse()
-        print(hkeys)
+        print("rows")
+        for hkey in hkeys:
+            print("%d: %s"%(hkey, self.row_ranges[hkey]))
+        vkeys = []
+        vkeys.extend(self.col_ranges.keys())
+        vkeys.sort()
+        vkeys.reverse
+        print("cols")
+        for vkey in vkeys:
+            print("%d: %s"%(vkey, self.col_ranges[vkey]))
+        
         
         cubes = 0
         overlap = 0
         while len(hkeys) > 0:
+            print(self.col_ranges[-21])
             # Highest horizontal range
             key = hkeys[-1]
+            print(key)
             hrange = self.row_ranges[key][0]
             
             # Get verticals associated and find minimum
+            print(hrange)
             lvert = self.vertical(key, hrange[0])
             rvert = self.vertical(key, hrange[1])
+            print("lvert: %s, rvert: %s"%(lvert, rvert))
             minvert = lvert
             maxvert = rvert
             mincol = hrange[0]
@@ -143,12 +153,15 @@ class DigPlan:
                 maxvert = lvert
                 mincol = hrange[1]
                 maxcol = hrange[0]
+            print("min: %d, max: %d"%(mincol,maxcol))
+            print("minvert: %s, maxvert: %s"%(minvert, maxvert))
             
             # add to total cubes
             cubes += (abs(minvert[1] - key) + 1) * (abs(maxcol - mincol) + 1)
             
             # locate horizontal associated with shortest vert
             hoz = self.horizontal(minvert[1], mincol)
+            print("horizontal at shortest vert %s"%str(hoz))
             if minvert[1] == maxvert[1]:
                 if mincol == hoz[0] and maxcol == hoz[1]:
                     # min and max columns match the horizontal range
@@ -157,6 +170,7 @@ class DigPlan:
                 else:
                     # verticals are equal, merge left horizontal with right
                     hoz2 = self.horizontal(maxvert[1], maxcol)
+                    print("other horizontal: %s"%str(hoz2))
                     begin = hoz[1]
                     obegin = hoz[1]
                     if hoz[0] < mincol:
@@ -169,25 +183,25 @@ class DigPlan:
                         oend = hoz2[0]
                     self.replace_horizontal(minvert[1], mincol, (begin, end))
                     self.remove_horizontal(maxvert[1], maxcol)
-                    overlap += oend - obegin + 1
+                    overlap += abs(oend - obegin) + 1
             elif mincol == hoz[0]:
                 # minimum column is moving to the right...adjust
                 # range over to the max column
                 if lvert[1] == minvert[1]:
                     self.replace_horizontal(minvert[1], mincol, (hoz[1], maxcol))
-                    overlap += maxcol - hoz[1] + 1
+                    overlap += abs(maxcol - hoz[1]) + 1
                 else:
                     self.replace_horizontal(minvert[1], mincol, (maxcol, hoz[1]))
-                    overlap += maxcol - mincol + 1
+                    overlap += abs(maxcol - mincol)+ 1
             elif mincol == hoz[1]:
                 # minimum column is moving to the left...adjust
                 # range over to the max column
                 if lvert[1] == minvert[1]:
                     self.replace_horizontal(minvert[1], mincol, (hoz[0], maxcol))
-                    overlap += maxcol - hoz[1] + 1
+                    overlap += abs(maxcol - hoz[1]) + 1
                 else:
                     self.replace_horizontal(minvert[1], mincol, (maxcol, hoz[0]))
-                    overlap += hoz[0] - maxcol + 1
+                    overlap += abs(hoz[0] - maxcol) + 1
                 
             # remove horizontal range(s) and short vertical(s)
             self.row_ranges[key].pop(0)
@@ -238,8 +252,8 @@ class DigPlan:
 input = read_lines("input/day18/input.txt")
 sample = read_lines("input/day18/sample.txt")
 
-value = solve_part1(sample)
-assert(value == 62)
+#value = solve_part1(sample)
+#assert(value == 62)
 value = solve_part1(input)
 assert(value == 47045)
 
