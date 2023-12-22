@@ -5,11 +5,21 @@ from utilities.runner import Runner
 def solve_part1(lines: list):
     world = World(lines)
     world.drop_bricks()
-    return world.disintegrable_bricks()
+    return len(world.disintegrable_bricks)
 
 @Runner("Day 22", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    world = World(lines)
+    world.drop_bricks()
+    impact = 0
+    for i in range(len(world.bricks)):
+        if i in world.disintegrable_bricks:
+            continue
+        impacted = set()
+        impacted.add(i)
+        world.disintegrate_impact(i, impacted)
+        impact += len(impacted) - 1
+    return impact
 
 class Brick:
     def __init__(self, line: str) -> None:
@@ -40,6 +50,7 @@ class World:
         return out
     
     def drop_bricks(self) -> None:
+        # cycle until all bricks are dropped
         cycle = 1
         while True:
             moved = False
@@ -50,34 +61,50 @@ class World:
             if not moved:
                 break
             cycle += 1
-            
-    def disintegrable_bricks(self) -> int:
-        supporting = {}
-        supported_by = {}
+        
+        # create maps of brick support
+        self.supporting = {}
+        self.supported_by = {}
         for i in range(len(self.bricks)-1, -1, -1):
             for j in range(len(self.bricks)-1, -1, -1):
                 if i == j:
                     continue
                 if self.__is_supporting(self.bricks[i], self.bricks[j]):
-                    s = supporting.get(i, [])
+                    s = self.supporting.get(i, [])
                     s.append(j)
-                    supporting[i] = s
-                    s = supported_by.get(j, [])
+                    self.supporting[i] = s
+                    s = self.supported_by.get(j, [])
                     s.append(i)
-                    supported_by[j] = s
-        total = 0
+                    self.supported_by[j] = s
+        
+        # determine bricks that can be disintegrated
+        self.disintegrable_bricks = []
         for i in range(len(self.bricks)):
-            if i not in supporting:
-                total += 1
+            if i not in self.supporting:
+                self.disintegrable_bricks.append(i)
                 continue
             d = True
-            for b in supporting[i]:
-                if len(supported_by[b]) == 1:
+            for b in self.supporting[i]:
+                if len(self.supported_by[b]) == 1:
                     d = False
                     break
             if d:
-                total += 1
-        return total
+                self.disintegrable_bricks.append(i)
+    
+    def disintegrate_impact(self, b: int, bricks: set[int]) -> None:
+        if b not in self.supporting:
+            return
+        newimpact = []
+        for sb in self.supporting[b]:
+            sby = self.supported_by[sb][:]
+            for i in sby[:]:
+                if i in bricks:
+                    sby.remove(i)
+            if len(sby) == 0:
+                bricks.add(sb)
+                newimpact.append(sb)
+        for sb in newimpact:
+            self.disintegrate_impact(sb, bricks)
     
     def __drop_brick(self, idx: int, brick: Brick) -> bool:
         moved = False
@@ -123,6 +150,6 @@ assert(value == 428)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == 7)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == 35654)
