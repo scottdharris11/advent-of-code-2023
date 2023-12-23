@@ -1,16 +1,14 @@
-import cProfile
 from utilities.data import read_lines, parse_integers
 from utilities.runner import Runner
 
 @Runner("Day 12", "Part 1")
 def solve_part1(lines: list):
     total = 0
-    with cProfile.Profile() as pr:
-        for line in lines:
-            s = line.split(" ")
-            r = Record(s[0], parse_integers(s[1], ","))
-            total += possibilities(r)
-    pr.print_stats()
+    for line in lines:
+        s = line.split(" ")
+        r = Record(s[0], parse_integers(s[1], ","))
+        p = possibilities(r.mask, r.pattern, 0)
+        total += p
     return total
 
 @Runner("Day 12", "Part 2")
@@ -20,7 +18,7 @@ def solve_part2(lines: list):
         s = line.split(" ")
         r = Record(s[0], parse_integers(s[1], ","))
         #r.unfold()
-        possible = possibilities(r)
+        possible = possibilities(r.mask, r.pattern, 0)
         total += possible
     return total
 
@@ -28,20 +26,10 @@ class Record:
     def __init__(self, mask: str, pattern: list[int]) -> None:
         self.mask = mask
         self.pattern = pattern
-        self.unknown = mask.count('?')
-        self.damagedtofill = sum(pattern) - mask.count('#')
     
     def __repr__(self):
         return str((self.mask, self.pattern))
-    
-    def unknownIndex(self, i: int) -> int:
-        count = 0
-        for si, c in enumerate(self.mask):
-            if c == '?':
-                if count == i:
-                    return si
-                count += 1
-    
+        
     def unfold(self) -> None:
         nmask = self.mask
         npattern = self.pattern[:]
@@ -51,52 +39,31 @@ class Record:
             npattern.extend(self.pattern[:])
         self.mask = nmask
         self.pattern = npattern
-        self.unknown = nmask.count('?')
-        self.damagedtofill = sum(npattern) - nmask.count('#')
 
-def possibilities(r: Record) -> int:
-    if r.damagedtofill == 0:
-        return 1
-    #print(r)
-    placements = []
-    for i in range(r.unknown-r.damagedtofill+1):
-        fill(r, tuple(), i, placements)
-    #print(placements)
-    return len(placements)
-
-def fill(r: Record, filled: tuple[int], idx: int, placements: list):
-    f = list(filled)
-    f.append(r.unknownIndex(idx))
-    if not possible(r, f):
-        return
-    if len(f) == r.damagedtofill:
-        placements.append(tuple(f))
-        return
-    for i in range(idx+1, r.unknown):
-        fill(r, tuple(f), i, placements)
-
-def possible(r: Record, placement: tuple[int]) -> bool:
-    #print((r, placement))
-    placement_size = len(placement)
-    damageCnt, damageIdx, placed = 0, 0, 0
-    for i, c in enumerate(r.mask):
-        if c == '?':
-            if placed == placement_size and placed < r.damagedtofill:
-                return damageCnt <= r.pattern[damageIdx]
-            c = "."
-            if i in placement:
-                placed += 1
-                c = "#"
-        if c == "#":
-            damageCnt += 1
-        else:
-            if damageCnt == 0:
-                continue
-            if damageCnt != r.pattern[damageIdx]:
-                return False
-            damageIdx += 1
-            damageCnt = 0
-    return damageCnt == 0 or damageCnt == r.pattern[-1]
+def possibilities(mask: str, pattern: list[int], prev_digits: int) -> int:
+    done = len(pattern) == 0 or (len(pattern) == 1 and pattern[0] == 0)
+    if mask == "":
+        return 1 if done else 0
+    if done:
+        return 1 if mask.count("#") == 0 else 0
+    
+    if pattern[0] == 0 and mask[0] == "#":
+        return 0
+    if pattern[0] == 0 and (mask[0] == "." or mask[0] == "?"):
+        return possibilities(mask[1:], pattern[1:], 0)
+    
+    p = 0
+    if mask[0] == ".":
+        if prev_digits > 0:
+            return 0
+        p = possibilities(mask[1:], pattern, 0)
+    elif mask[0] == "#":
+        p = possibilities(mask[1:], [pattern[0]-1,*pattern[1:]], prev_digits+1)
+    elif mask[0] == "?":
+        p += possibilities(mask[1:], [pattern[0]-1,*pattern[1:]], prev_digits+1)
+        if prev_digits == 0:
+            p += possibilities(mask[1:], pattern, 0)
+    return p
 
 # Part 1
 input = read_lines("input/day12/input.txt")
