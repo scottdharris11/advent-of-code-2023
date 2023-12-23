@@ -36,13 +36,13 @@ class Island:
             if point in explored:
                 continue
             explored.add(point)
-            for move in self.moves_from(point, point):
-                next = self.expand_path(point, move)
+            for move in self.__moves_from(point, point):
+                next = self.__expand_path(point, move)
                 if next == None:
                     continue
                 unexplored.append(next)
     
-    def moves_from(self, current: tuple[int], prev: tuple[int]) -> list[tuple[int]]:
+    def __moves_from(self, current: tuple[int], prev: tuple[int]) -> list[tuple[int]]:
         moves = []
         for move in [(1,0,">"), (-1,0,"<"), (0,1,"v"), (0,-1,"^")]:
             x = move[0] + current[0]
@@ -59,29 +59,29 @@ class Island:
             moves.append((x, y))
         return moves
     
-    def expand_path(self, point: tuple[int], start: tuple[int]) -> tuple[int]:
+    def __expand_path(self, point: tuple[int], start: tuple[int]) -> tuple[int]:
         prev = point
         current = start
         steps = 1
         while True:
-            moves = self.moves_from(current, prev)
+            moves = self.__moves_from(current, prev)
             count = len(moves)
             if count == 0:
                 # dead end
                 return None
             if count > 1:
                 # found decision point (or end), record path to all and schedule for expansion
-                self.add_path(Path(point, current, steps))
+                self.__add_path(Path(point, current, steps))
                 return current
             steps += 1
             prev = current
             current = moves[0]
             if moves[0][1] == self.row_count -1:
                 # reached goal, treat as point
-                self.add_path(Path(point, current, steps))
+                self.__add_path(Path(point, current, steps))
                 return current
             
-    def add_path(self, path: Path) -> None:
+    def __add_path(self, path: Path) -> None:
         if path.start not in self.graph:
             self.graph[path.start] = []
         self.graph[path.start].append(path)
