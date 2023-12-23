@@ -17,9 +17,9 @@ def solve_part2(lines: list):
     for line in lines:
         s = line.split(" ")
         r = Record(s[0], parse_integers(s[1], ","))
-        #r.unfold()
-        possible = possibilities(r.mask, r.pattern, 0)
-        total += possible
+        r.unfold()
+        p = possibilities(r.mask, r.pattern, 0)
+        total += p
     return total
 
 class Record:
@@ -40,6 +40,16 @@ class Record:
         self.mask = nmask
         self.pattern = npattern
 
+def memoize(f):
+    memo = {}
+    def helper(m: str, p: list[int], d: int):
+        t = tuple(p)
+        if (m, t, d) not in memo:            
+            memo[(m, t, d)] = f(m, p, d)
+        return memo[(m, t, d)]
+    return helper
+
+@memoize
 def possibilities(mask: str, pattern: list[int], prev_digits: int) -> int:
     done = len(pattern) == 0 or (len(pattern) == 1 and pattern[0] == 0)
     if mask == "":
@@ -75,7 +85,7 @@ value = solve_part1(input)
 assert(value == 7221)
 
 # Part 2
-#value = solve_part2(sample)
-#assert(value == 525152)
-#value = solve_part2(input)
-#assert(value == -1)
+value = solve_part2(sample)
+assert(value == 525152)
+value = solve_part2(input)
+assert(value == 7139671893722)
