@@ -61,18 +61,18 @@ class Hike:
 def max_hike(island: Island) -> int:
     hikes = [Hike([island.start])]
     alldone = False
+    steps = []
     while not alldone:
         altpaths = []
         for hike in hikes:
             if hike.done:
                 continue
             altpaths.extend(take_hike(island, hike))
+            if hike.goal:
+                steps.append(len(hike.steps)-1)
         hikes.extend(altpaths)
         if len(altpaths) == 0:
             alldone = True
-    steps = []
-    for hike in hikes:
-        steps.append(len(hike.steps)-1)
     return max(steps)
 
 def take_hike(island: Island, hike: Hike) -> list[Hike]:
