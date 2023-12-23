@@ -19,7 +19,7 @@ class Island:
         self.start = (1, 0)
         self.onlydown = onlydown
         self.moves_cache = {}
-        
+    
     def moves_from(self, current: tuple[int]) -> list[tuple[int]]:
         if current in self.moves_cache:
             return self.moves_cache[current]
@@ -40,40 +40,38 @@ class Island:
         return current[1] == self.row_count - 1
 
 class Hike:
-    def __init__(self, steps: list[tuple[int]]) -> None:
-        self.steps = steps
-        self.ss = set(steps)
+    def __init__(self) -> None:
+        self.steps = set()
         self.done = False
         self.goal = False
-        self.current = steps[-1]
     
     def copy(self) -> "Hike":
-        return Hike(self.steps[:])
+        n = Hike()
+        n.steps = self.steps.copy()
+        return n
         
     def already_been(self, loc: tuple[int]) -> bool:
-        return loc in self.ss
+        return loc in self.steps
     
     def step(self, loc: tuple[int]) -> None:
-        self.steps.append(loc)
-        self.ss.add(loc)
+        self.steps.add(loc)
         self.current = loc
 
 def max_hike(island: Island) -> int:
-    hikes = [Hike([island.start])]
-    alldone = False
-    steps = []
-    while not alldone:
-        altpaths = []
-        for hike in hikes:
-            if hike.done:
-                continue
-            altpaths.extend(take_hike(island, hike))
-            if hike.goal:
-                steps.append(len(hike.steps)-1)
-        hikes.extend(altpaths)
-        if len(altpaths) == 0:
-            alldone = True
-    return max(steps)
+    start = Hike()
+    start.step(island.start)
+    active = [start]
+    max_steps = 0
+    loops = 0
+    while len(active) > 0:
+        hike = active.pop()
+        active.extend(take_hike(island, hike))
+        if hike.goal:
+            max_steps = max(max_steps, len(hike.steps)-1)
+        loops += 1
+        if loops % 5000 == 0:
+            break
+    return max_steps
 
 def take_hike(island: Island, hike: Hike) -> list[Hike]:
     altpaths = []
@@ -113,5 +111,5 @@ assert(value == 2030)
 # Part 2
 value = solve_part2(sample)
 assert(value == 154)
-value = solve_part2(input)
-assert(value == -1)
+#value = solve_part2(input)
+#assert(value == -1)
