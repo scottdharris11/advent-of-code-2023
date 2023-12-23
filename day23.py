@@ -3,7 +3,7 @@ from utilities.runner import Runner
 
 @Runner("Day 23", "Part 1")
 def solve_part1(lines: list):
-    island = Island(lines, True)
+    island = Island(lines, True) 
     return max_hike(island)
 
 @Runner("Day 23", "Part 2")
@@ -29,45 +29,62 @@ class Island:
         self.onlydown = onlydown
         self.graph = {}
         
-        unexplored = [(self.start,[self.start])]
+        unexplored = [self.start]
+        explored = set()
         while len(unexplored) > 0:
-            explore = unexplored.pop()
-            if explore[0] in self.graph:
+            point = unexplored.pop()
+            if point in explored:
                 continue
-            self.graph[explore[0]] = []
-            for path in explore[1]:
-                unexplored.append(self.expand_path(explore[0], path))
+            explored.add(point)
+            for move in self.moves_from(point, point):
+                next = self.expand_path(point, move)
+                if next == None:
+                    continue
+                unexplored.append(next)
     
-    def expand_path(self, point: tuple[int], start: tuple[int]) -> (tuple[int], list[tuple[int]]):
+    def moves_from(self, current: tuple[int], prev: tuple[int]) -> list[tuple[int]]:
+        moves = []
+        for move in [(1,0,">"), (-1,0,"<"), (0,1,"v"), (0,-1,"^")]:
+            x = move[0] + current[0]
+            y = move[1] + current[1]
+            if x < 0 or x == self.col_count or y < 0 or y == self.row_count:
+                continue
+            if prev[0] == x and prev[1] == y:
+                continue
+            next = self.grid[y][x]
+            if next == "#":
+                continue
+            if self.onlydown and (next != "." and next != move[2]):
+                continue
+            moves.append((x, y))
+        return moves
+    
+    def expand_path(self, point: tuple[int], start: tuple[int]) -> tuple[int]:
         prev = point
         current = start
         steps = 1
         while True:
-            moves = []
-            count = 0
-            for move in [(1,0,">"), (-1,0,"<"), (0,1,"v"), (0,-1,"^")]:
-                x = move[0] + current[0]
-                y = move[1] + current[1]
-                if prev[0] == x and prev[1] == y:
-                    continue
-                next = self.grid[y][x]
-                if next == "#":
-                    continue
-                if self.onlydown and (next != "." and next != move[2]):
-                    continue
-                moves.append((x, y))
-                count += 1
-            if count == 0 or count > 1:
+            moves = self.moves_from(current, prev)
+            count = len(moves)
+            if count == 0:
+                # dead end
+                return None
+            if count > 1:
                 # found decision point (or end), record path to all and schedule for expansion
-                self.graph[point].append(Path(point, current, steps))
-                return current, moves
+                self.add_path(Path(point, current, steps))
+                return current
             steps += 1
             prev = current
             current = moves[0]
             if moves[0][1] == self.row_count -1:
                 # reached goal, treat as point
-                self.graph[point].append(Path(point, current, steps))
-                return current, []
+                self.add_path(Path(point, current, steps))
+                return current
+            
+    def add_path(self, path: Path) -> None:
+        if path.start not in self.graph:
+            self.graph[path.start] = []
+        self.graph[path.start].append(path)
     
     def paths_from(self, current: tuple[int]) -> list[Path]:
         return self.graph[current]
@@ -77,7 +94,7 @@ class Island:
 
 class Hike:
     def __init__(self) -> None:
-        self.points = []
+        self.points = set()
         self.current = None
         self.steps = 0
         self.done = False
@@ -93,7 +110,7 @@ class Hike:
         return path.end in self.points
     
     def take(self, path: Path) -> None:
-        self.points.append(path.end)
+        self.points.add(path.end)
         self.steps += path.steps
         self.current = path.end
 
@@ -106,7 +123,7 @@ def max_hike(island: Island) -> int:
         hike = active.pop()
         active.extend(take_hike(island, hike))
         if hike.goal:
-            max_steps = max(max_steps, hike.steps-1)
+            max_steps = max(max_steps, hike.steps)
     return max_steps
 
 def take_hike(island: Island, hike: Hike) -> list[Hike]:
@@ -149,4 +166,4 @@ assert(value == 2030)
 value = solve_part2(sample)
 assert(value == 154)
 value = solve_part2(input)
-assert(value > 5834)
+assert(value == 6390)
