@@ -5,36 +5,42 @@ from utilities.runner import Runner
 @Runner("Day 20", "Part 1")
 def solve_part1(lines: list):
     modules = create_modules(lines)
-    high_cnt = 0
-    low_cnt = 0
-    for _ in range(1000):
-        queue = [Pulse("button", "broadcaster", LOW_PULSE)]
-        while len(queue) != 0:
-            pulse = queue[0]
-            if pulse.ptype == HIGH_PULSE:
-                high_cnt += 1
-            else:
-                low_cnt += 1
-            queue.extend(modules[pulse.to_id].process_pulse(pulse))
-            queue.pop(0)
-    return high_cnt * low_cnt
+    return run_cyles(modules, 1000)
 
 @Runner("Day 20", "Part 2")
-def solve_part2(lines: list):
+def solve_part2(lines: list, id: str):
     modules = create_modules(lines)
-    return modules["rx"].inputs[0].low_pulse_cycle_rate()
+    
+    # register sniffer modules to track high pulse cycle
+    # outputs from feeders to supplied module id
+    sniffers = []
+    for i in modules[id].inputs:
+        s = SnifferModule(i.id+"-sniffer")
+        sniffers.append(s)
+        modules[i.id].add_destination(s)
+    for s in sniffers:
+        modules[s.id] = s
+    
+    # run some cycles and then multiply the high
+    # cycle counts together to find the convergence point
+    run_cyles(modules, 10000)
+    converge = 1
+    for s in sniffers:
+        converge *= s.high_cycles[0]
+    return converge
 
 HIGH_PULSE = 1
 LOW_PULSE = 0
 
 class Pulse:
-    def __init__(self, from_id: str, to_id: str, ptype: int) -> None:
+    def __init__(self, from_id: str, to_id: str, ptype: int, cycle: int) -> None:
         self.from_id = from_id
         self.to_id = to_id
         self.ptype = ptype
+        self.cycle = cycle
         
     def __repr__(self) -> str:
-        return str((self.from_id, self.to_id, self.ptype))
+        return str((self.from_id, self.to_id, self.ptype, self.cycle))
         
 class Module:
     def __init__(self, id: str) -> None:
@@ -57,24 +63,15 @@ class Module:
     def add_input(self, i: "Module") -> None:
         self.inputs.append(i)
         
-    def send_pulse(self, ptype: int) -> list[Pulse]:
+    def send_pulse(self, ptype: int, cycle: int) -> list[Pulse]:
         out = []
         for d in self.dest:
-            out.append(Pulse(self.id, d.id, ptype))
+            out.append(Pulse(self.id, d.id, ptype, cycle))
         return out
     
     def process_pulse(self, _: Pulse) -> list[Pulse]:
         return []
-    
-    def pulse_rate(self) -> int:
-        return 1
-    
-    def low_pulse_cycle_rate(self) -> int:
-        return 1
-    
-    def high_pulse_cycle_rate(self) -> int:
-        return 0
-    
+        
 class FlipFlopModule(Module):
     def __init__(self, id: str) -> None:
         super().__init__(id)
@@ -90,25 +87,8 @@ class FlipFlopModule(Module):
         send = LOW_PULSE
         if self.on:
             send = HIGH_PULSE
-        return super().send_pulse(send)
+        return super().send_pulse(send, pulse.cycle)
     
-    def pulse_rate(self) -> int:
-        # max of each connections low pulse rate
-        rate = 0
-        for input in self.inputs:
-            rate = max(rate, input.low_pulse_cycle_rate())
-        return rate
-    
-    def low_pulse_cycle_rate(self) -> int:
-        # lcm of each connections low pulse cycle rate x 2
-        rates = []
-        for input in self.inputs:
-            rates.append(input.low_pulse_cycle_rate() * 2)
-        return lcm(*rates)
-    
-    def high_pulse_cycle_rate(self) -> int:
-        return self.low_pulse_cycle_rate()
-
 class ConjunctionModule(Module):
     def __init__(self, id: str) -> None:
         super().__init__(id)
@@ -128,31 +108,34 @@ class ConjunctionModule(Module):
             if l == LOW_PULSE:
                 send = HIGH_PULSE
                 break
-        return super().send_pulse(send)
-    
-    def pulse_rate(self) -> int:
-        # rate is the pulse rate of all input connections
-        rate = 0
-        for input in self.inputs:
-            rate += input.pulse_rate()
-        return rate
-    
-    def low_pulse_cycle_rate(self) -> int:
-        # lcm of each its connection high pulse cycle rate
-        rates = []
-        for input in self.inputs:
-            rates.append(input.high_pulse_cycle_rate())
-        return lcm(*rates)
-    
-    def high_pulse_cycle_rate(self) -> int:
-        return self.pulse_rate()
+        return super().send_pulse(send, pulse.cycle)
 
 class BroadcastModule(Module):
     def process_pulse(self, pulse: Pulse) -> list[Pulse]:
-        return super().send_pulse(pulse.ptype)
+        return super().send_pulse(pulse.ptype, pulse.cycle)
 
 class OutputModule(Module):
     pass
+
+class SnifferModule(Module):
+    def __init__(self, id: str) -> None:
+        super().__init__(id)
+        self.called = 0
+        self.high = 0
+        self.low = 0
+        self.high_cycles = []
+    
+    def __repr__(self) -> str:
+        return str((self.id, self.called, self.high, self.low, self.high_cycles))
+    
+    def process_pulse(self, pulse: Pulse) -> list[Pulse]:
+        self.called += 1
+        if pulse.ptype == HIGH_PULSE:
+            self.high += 1
+            self.high_cycles.append(pulse.cycle)
+        else:
+            self.low += 1
+        return []
 
 def create_modules(lines: list[str]) -> dict[str,Module]:
     modules = {}
@@ -179,6 +162,21 @@ def create_modules(lines: list[str]) -> dict[str,Module]:
     
     return modules
 
+def run_cyles(modules: list[Module], cycles: int) -> int:
+    high_cnt = 0
+    low_cnt = 0
+    for i in range(cycles):
+        queue = [Pulse("button", "broadcaster", LOW_PULSE, i+1)]
+        while len(queue) != 0:
+            pulse = queue[0]
+            if pulse.ptype == HIGH_PULSE:
+                high_cnt += 1
+            else:
+                low_cnt += 1
+            queue.extend(modules[pulse.to_id].process_pulse(pulse))
+            queue.pop(0)
+    return high_cnt * low_cnt
+    
 # Part 1
 input = read_lines("input/day20/input.txt")
 sample = read_lines("input/day20/sample.txt")
@@ -192,7 +190,5 @@ value = solve_part1(input)
 assert(value == 818723272)
 
 # Part 2
-value = solve_part2(sample2)
-assert(value == 4)
-#value = solve_part2(input)
-#assert(value == -1)
+value = solve_part2(input, "cn")
+assert(value == 243902373381257)
