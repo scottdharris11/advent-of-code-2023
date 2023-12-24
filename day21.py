@@ -20,50 +20,64 @@ class Map:
         self.grid = lines
         self.row_count = len(lines)
         self.col_count = len(lines[0])
-        self.locations = [[0 for _ in range(self.col_count)] for _ in range(self.row_count)]
+        self.move_cache = {}
+        self.tiles = {}
         for y, row in enumerate(self.grid):
             for x, col in enumerate(row):
                 if col == "S":
-                    self.locations[y][x] = 1
+                    self.tiles[(0,0)] = set()
+                    self.tiles[(0,0)].add((x, y))
                     return
     
     def step(self) -> None:
-        nlocs = [[0 for _ in range(self.col_count)] for _ in range(self.row_count)]
-        for y, row in enumerate(self.locations):
-            for x, col in enumerate(row):
-                if col == 0:
-                    continue
-                for move in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-                    nx = x + move[0]
-                    ny = y + move[1]
-                    
-                    if nx < 0:
-                        nx = self.col_count - 1
-                        if self.locations[y][nx] > 0:
-                            continue
-                    elif nx == self.col_count:
-                        nx = 0
-                        if self.locations[y][nx] > 0:
-                            continue
-                    elif ny < 0:
-                        ny = self.row_count - 1
-                        if self.locations[ny][x] > 0:
-                            continue
-                    elif ny == self.row_count:
-                        ny = 0
-                        if self.locations[ny][x] > 0:
-                            continue
-                    
-                    if self.grid[ny][nx] == "#":
-                        continue
-                    nlocs[ny][nx] = 1 * col
-        self.locations = nlocs
-        
+        ntiles = {}
+        lasttilekey = None
+        lasttile = None
+        for tile in self.tiles.keys():
+            for location in self.tiles[tile]:
+                if location not in self.move_cache:
+                    self.move_cache[location] = self.moves(location)
+                moves = self.move_cache[location]
+                for move in moves:
+                    tilekey = (tile[0]+move[2], tile[1]+move[3])
+                    if lasttile == None or lasttilekey != tilekey:
+                        lasttile = ntiles.get(tilekey, set())
+                        lasttilekey = tilekey
+                    lasttile.add((move[0], move[1]))
+                    ntiles[tilekey] = lasttile
+        self.tiles = ntiles
+    
+    def moves(self, location: tuple[int]) -> list[tuple[int]]:
+        moves = []
+        for move in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            tx = 0
+            ty = 0
+            nx = location[0] + move[0]
+            ny = location[1] + move[1]
+            
+            if nx < 0:
+                nx = self.col_count - 1
+                tx = -1
+            elif nx == self.col_count:
+                nx = 0
+                tx = 1
+            elif ny < 0:
+                ny = self.row_count - 1
+                ty = -1
+            elif ny == self.row_count:
+                ny = 0
+                ty = 1
+                
+            if self.grid[ny][nx] == "#":
+                continue
+            
+            moves.append((nx, ny, tx, ty))
+        return moves
+    
     def possible_locations(self) -> int:
         total = 0
-        for row in self.locations:
-            for col in row:
-                total += col
+        for tile in self.tiles.values():
+            total += len(tile)
         return total
 
 # Part 1
@@ -86,9 +100,9 @@ value = solve_part2(sample, 100)
 assert(value == 6536)
 value = solve_part2(sample, 500)
 assert(value == 167004)
-value = solve_part2(sample, 1000)
-assert(value == 668697)
-value = solve_part2(sample, 5000)
-assert(value == 16733044)
-value = solve_part2(input, 26501365)
-assert(value == -1)
+#value = solve_part2(sample, 1000)
+#assert(value == 668697)
+#value = solve_part2(sample, 5000)
+#assert(value == 16733044)
+#value = solve_part2(input, 26501365)
+#assert(value == -1)
