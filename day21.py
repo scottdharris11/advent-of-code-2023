@@ -22,36 +22,49 @@ class Map:
         self.row_count = len(lines)
         self.col_count = len(lines[0])
         self.move_cache = {}
-        self.tiles = {}
-        self.max = 0
+        self.states = {}
         for y, row in enumerate(self.grid):
             for x, col in enumerate(row):
                 if col == "S":
-                    self.tiles[(0,0)] = MapTile((0,0), (x, y))
-                if col != "#":
-                    self.max += 1
+                    state = MapTileState()
+                    state.plots.add((x, y))
+                    state.active = 1
+                    self.states[hash(state)] = state
+                    return
     
     def step(self) -> None:
-        lasttilekey = None
-        lasttile = None
-        for key, tile in self.tiles.copy().items():
-            if tile.maxed:
+        for state in self.states.copy().values():
+            if state.active == 0:
                 continue
-            for location in tile.locations():
-                if location not in self.move_cache:
-                    self.move_cache[location] = self.moves(location)
-                moves = self.move_cache[location]
-                for move in moves:
-                    tilekey = (key[0]+move[2], key[1]+move[3])
-                    if lasttile == None or lasttilekey != tilekey:
-                        if tilekey not in self.tiles:
-                            self.tiles[tilekey] = MapTile(tilekey, None)
-                        lasttile = self.tiles[tilekey]
-                        lasttilekey = tilekey
-                    lasttile.add_step((move[0], move[1]))
-        for tile in self.tiles.values():
-            tile.complete_cycle(self.max)
+            if state.next == None:
+                state.next = self.next_states(state)
+            for n in state.next:
+                self.states[n].stage(state.active)
+        for state in self.states.values():
+            state.commit()
     
+    def next_states(self, state: "MapTileState") -> list["MapTileState"]:
+        tiles = {}
+        for location in state.plots:
+            if location not in self.move_cache:
+                self.move_cache[location] = self.moves(location)
+            moves = self.move_cache[location]
+            for move in moves:
+                xy = (move[0], move[1])
+                key = (move[2], move[3])
+                if key not in tiles:
+                    tiles[key] = MapTileState()
+                tiles[key].plots.add(xy)
+        
+        states = []
+        for tile in tiles.values():
+            h = hash(tile)
+            if h not in self.states:
+                tile.locations = len(tile.plots)
+                self.states[h] = tile
+            states.append(h)
+        return states
+
     def moves(self, location: tuple[int]) -> list[tuple[int]]:
         moves = []
         for move in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
@@ -81,53 +94,30 @@ class Map:
     
     def possible_locations(self) -> int:
         total = 0
-        for tile in self.tiles.values():
-            total += tile.plots_reachable()
+        for state in self.states.values():
+            total += state.active * state.locations
         return total
 
-class MapTile:
-    def __init__(self, sliver: tuple[int], start: tuple[int]) -> None:
-        self.sliver = sliver
+class MapTileState:
+    def __init__(self) -> None:
         self.plots = set()
-        if start != None:
-            self.plots.add(start)
-        self.stage = set()
-        self.maxed = False
-        self.prev = 0
-        self.last = 0
-        self.maxcnt = 0
+        self.locations = 0
+        self.next = None
+        self.active = 0
+        self.staged = 0
         
-    def add_step(self, step: tuple[int]) -> None:
-        if self.maxed:
-            return
-        self.stage.add(step)
-        
-    def complete_cycle(self, max: int) -> None:
-        if self.maxed:
-            t = self.prev
-            self.prev = self.last
-            self.last = t
-            return
-        
-        self.prev = self.last
-        self.last = len(self.stage)
-        if self.last > max/2:
-            self.maxcnt += 1
-        if self.maxcnt >= 10:
-            self.maxed = True
-            self.plots = None
-            self.stage = None
-        else:
-            self.plots = self.stage
-            self.stage = set()
-        
-    def locations(self) -> set[tuple[int]]:
-        if self.maxed:
-            return []
-        return self.plots
+    def __hash__(self) -> int:
+        h = 0
+        for plot in self.plots:
+            h += hash(plot)
+        return h
+
+    def stage(self, count: int) -> None:
+        self.staged += count
     
-    def plots_reachable(self) -> int:
-        return self.last
+    def commit(self) -> None:
+        self.active = self.staged
+        self.staged = 0
 
 # Part 1
 input = read_lines("input/day21/input.txt")
