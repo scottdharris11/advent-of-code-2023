@@ -9,7 +9,7 @@ def solve_part1(lines: list[str]):
 
 @Runner("Day 25", "Part 2")
 def solve_part2(lines: list):
-    return -1
+    return None
 
 class Component:
     def __init__(self, id: str) -> None:
@@ -99,6 +99,6 @@ assert(value == 552695)
 
 # Part 2
 value = solve_part2(sample)
-assert(value == -1)
+assert(value == None)
 value = solve_part2(input)
-assert(value == -1)
+assert(value == None)
