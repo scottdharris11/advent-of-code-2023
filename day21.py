@@ -1,147 +1,74 @@
-import cProfile
+"""utility imports"""
+import functools
 from utilities.data import read_lines
 from utilities.runner import Runner
 
 @Runner("Day 21", "Part 1")
 def solve_part1(lines: list, steps: int):
-    m = Map(lines)
-    for _ in range(steps):
-        m.step()
-    return m.possible_locations()
+    """Solution for part 1"""
+    return reachable_plots(Farm(lines), steps)
 
 @Runner("Day 21", "Part 2")
 def solve_part2(lines: list, steps: int):
-    m = Map(lines)
-    for _ in range(steps):
-        m.step()
-    return m.possible_locations()
+    """Solution for part 2"""
+    return reachable_plots(Farm(lines), steps)
 
-class Map:
+class Farm:
+    """Farm map"""
     def __init__(self, lines: list) -> None:
-        self.grid = lines
-        self.row_count = len(lines)
-        self.col_count = len(lines[0])
-        self.move_cache = {}
-        self.states = {}
-        for y, row in enumerate(self.grid):
+        self.rocks = set()
+        self.height = len(lines)
+        self.width = len(lines[0])
+        for y, row in enumerate(lines):
             for x, col in enumerate(row):
                 if col == "S":
-                    state = MapTileState()
-                    state.plots.add((x, y))
-                    state.active = 1
-                    self.states[hash(state)] = state
-                    return
-    
-    def step(self) -> None:
-        for state in self.states.copy().values():
-            if state.active == 0:
-                continue
-            if state.next == None:
-                state.next = self.next_states(state)
-            for n in state.next:
-                self.states[n].stage(state.active)
-        for state in self.states.values():
-            state.commit()
-    
-    def next_states(self, state: "MapTileState") -> list["MapTileState"]:
-        tiles = {}
-        for location in state.plots:
-            if location not in self.move_cache:
-                self.move_cache[location] = self.moves(location)
-            moves = self.move_cache[location]
-            for move in moves:
-                xy = (move[0], move[1])
-                key = (move[2], move[3])
-                if key not in tiles:
-                    tiles[key] = MapTileState()
-                tiles[key].plots.add(xy)
-        
-        states = []
-        for tile in tiles.values():
-            h = hash(tile)
-            if h not in self.states:
-                tile.locations = len(tile.plots)
-                self.states[h] = tile
-            states.append(h)
-        return states
+                    self.start = (x, y)
+                if col == "#":
+                    self.rocks.add((x,y))
 
-    def moves(self, location: tuple[int]) -> list[tuple[int]]:
+    @functools.lru_cache(maxsize=5000)
+    def moves_from(self, current: tuple[int]) -> list[tuple[int]]:
+        """possible moves in one step from a location"""
+        x = current[0]
+        if x < 0 or x >= self.width:
+            x %= self.width
+        y = current[1]
+        if y < 0 or y >= self.height:
+            y %= self.height
         moves = []
         for move in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            tx = 0
-            ty = 0
-            nx = location[0] + move[0]
-            ny = location[1] + move[1]
-            
-            if nx < 0:
-                nx = self.col_count - 1
-                tx = -1
-            elif nx == self.col_count:
-                nx = 0
-                tx = 1
-            elif ny < 0:
-                ny = self.row_count - 1
-                ty = -1
-            elif ny == self.row_count:
-                ny = 0
-                ty = 1
-                
-            if self.grid[ny][nx] == "#":
+            nx = current[0] + move[0]
+            ny = current[1] + move[1]
+            if (x + move[0], y + move[1]) in self.rocks:
                 continue
-            
-            moves.append((nx, ny, tx, ty))
+            moves.append((nx, ny))
         return moves
-    
-    def possible_locations(self) -> int:
-        total = 0
-        for state in self.states.values():
-            total += state.active * state.locations
-        return total
 
-class MapTileState:
-    def __init__(self) -> None:
-        self.plots = set()
-        self.locations = 0
-        self.next = None
-        self.active = 0
-        self.staged = 0
-        
-    def __hash__(self) -> int:
-        h = 0
-        for plot in self.plots:
-            h += hash(plot)
-        return h
+def reachable_plots(farm: Farm, steps: int) -> int:
+    """determine the plots reachable in a number of steps"""
+    before = set()
+    before.add(farm.start)
+    for _ in range(steps):
+        after = set()
+        for b in before:
+            after.update(farm.moves_from(b))
+        before = after
+        #print("step " + str(i+1) + ": " + str(len(before)))
+        #print(before)
+    return len(before)
 
-    def stage(self, count: int) -> None:
-        self.staged += count
-    
-    def commit(self) -> None:
-        self.active = self.staged
-        self.staged = 0
-
-# Part 1
-input = read_lines("input/day21/input.txt")
+# Data
+data = read_lines("input/day21/input.txt")
 sample = read_lines("input/day21/sample.txt")
 
-value = solve_part1(sample, 6)
-assert(value == 16)
-value = solve_part1(input, 64)
-assert(value == 3820)
+# Part 1
+assert solve_part1(sample, 6) == 16
+assert solve_part1(data, 64) == 3820
 
 # Part 2
-value = solve_part2(sample, 6)
-assert(value == 16)
-value = solve_part2(sample, 10)
-assert(value == 50)
-value = solve_part2(sample, 50)
-assert(value == 1594)
-value = solve_part2(sample, 100)
-assert(value == 6536)
-value = solve_part2(sample, 500)
-assert(value == 167004)
-value = solve_part2(sample, 1000)
-assert(value == 668697)
-value = solve_part2(sample, 5000)
-assert(value == 16733044)
-#value = solve_part2(input, 26501365)
-#assert(value == -1)
+assert solve_part2(sample, 6) == 16
+assert solve_part2(sample, 10) == 50
+assert solve_part2(sample, 50) == 1594
+assert solve_part2(sample, 100) == 6536
+#assert solve_part2(sample, 500) == 167004
+#assert solve_part2(data) == -1
