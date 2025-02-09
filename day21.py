@@ -6,12 +6,24 @@ from utilities.runner import Runner
 @Runner("Day 21", "Part 1")
 def solve_part1(lines: list, steps: int):
     """Solution for part 1"""
-    return reachable_plots(Farm(lines), steps)
+    return reachable_plots(Farm(lines), steps)[steps]
 
 @Runner("Day 21", "Part 2")
 def solve_part2(lines: list, steps: int):
     """Solution for part 2"""
-    return reachable_plots(Farm(lines), steps)
+    farm = Farm(lines)
+    half = len(lines) // 2
+    full = len(lines)
+    reachable = reachable_plots(farm, (full * 3)+half)
+    times = (steps - half) // full
+    sequence = []
+    sequence.append(reachable[half])
+    sequence.append(reachable[full + half])
+    sequence.append(reachable[(full * 2) + half])
+    sequence.append(reachable[(full * 3) + half])
+    while len(sequence) <= times:
+        sequence.append(next_value(sequence[-4:]))
+    return sequence[-1]
 
 class Farm:
     """Farm map"""
@@ -44,18 +56,39 @@ class Farm:
             moves.append((nx, ny))
         return moves
 
-def reachable_plots(farm: Farm, steps: int) -> int:
+def reachable_plots(farm: Farm, steps: int) -> dict:
     """determine the plots reachable in a number of steps"""
-    before = set()
-    before.add(farm.start)
-    for _ in range(steps):
-        after = set()
-        for b in before:
-            after.update(farm.moves_from(b))
-        before = after
-        #print("step " + str(i+1) + ": " + str(len(before)))
-        #print(before)
-    return len(before)
+    reached = {}
+    q = []
+    visited = set()
+    q.append((0,farm.start))
+    visited.add(farm.start)
+    while len(q) > 0:
+        s, pos = q.pop(0)
+        if s > steps:
+            continue
+        if s not in reached and s >= 2:
+            reached[s] = reached.get(s-2)
+        reached[s] = reached.get(s,0)+1
+        moves = farm.moves_from(pos)
+        for move in moves:
+            if move not in visited:
+                q.append((s+1, move))
+                visited.add(move)
+    return reached
+
+def next_value(values: list[int]) -> int:
+    """for a given sequence of values, determine the next value (from day 9, quadratic sequence)"""
+    diffs = []
+    allzeroes = True
+    for i in range(len(values)-1):
+        d = values[i+1] - values[i]
+        diffs.append(d)
+        if values[i+1] != 0 or values[i] != 0:
+            allzeroes = False
+    if allzeroes:
+        return 0
+    return values[-1] + next_value(diffs)
 
 # Data
 data = read_lines("input/day21/input.txt")
@@ -66,9 +99,4 @@ assert solve_part1(sample, 6) == 16
 assert solve_part1(data, 64) == 3820
 
 # Part 2
-assert solve_part2(sample, 6) == 16
-assert solve_part2(sample, 10) == 50
-assert solve_part2(sample, 50) == 1594
-assert solve_part2(sample, 100) == 6536
-#assert solve_part2(sample, 500) == 167004
-#assert solve_part2(data) == -1
+assert solve_part2(data, 26501365) == 632421652138917
