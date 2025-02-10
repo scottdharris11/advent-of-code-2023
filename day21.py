@@ -1,5 +1,4 @@
 """utility imports"""
-import functools
 from utilities.data import read_lines
 from utilities.runner import Runner
 
@@ -11,18 +10,41 @@ def solve_part1(lines: list, steps: int):
 @Runner("Day 21", "Part 2")
 def solve_part2(lines: list, steps: int):
     """Solution for part 2"""
+    # Needed a great deal of help with this part. Several hints in the aoc reddit thread lead me
+    # to understand the extrapolation necessary (not possible to actually compute that many steps).
+    # understanding that the work done on day 9 set the stage for calculating the next value was a
+    # key step however still needed additional help to unlock.  The fact that the step amount was
+    # dividable (to the tune of 202300 when taking the grid width (131) plus half the grid
+    # width (65)) is something i would not have come to on my own.  Also the fact that in the real
+    # inputs there would end up being a clear path from starting position to the extremes (walking
+    # straight up, down, left, right) which was different than the sample.  I ended up using the
+    # sample only to ensure I was calculating the offsets properly back to the original grid for
+    # comparison purposes.  After that, the below method didn't work for it since the rocks didn't
+    # lend it to a uniform method. The next problem that I had was understanding how many I had to
+    # calculate before starting the projections.  Even after using the site:
+    # https://www.dcode.fr/lagrange-interpolating-polynomial?__r=1.3f4afcaf435bf67e6bd25ca5495fbd5b
+    # to do a "langrange interpoloating ploynomial" calculation, had to realize that I needed to
+    # start with 4 values to project the next value correctly.  This blog post was helpful to me
+    # in understanding the solution:
+    # https://www.ericburden.work/blog/2023/12/21/advent-of-code-day-21/
+    #
+    # Value 1: Half a grid (65 steps)
+    # Value 2: Full grid plus half (131 + 65 = 196)
+    # Value 3: 2x full grid plus half (262 + 65 = 327)
+    # Value 4: 3x full grid plus half (393 + 65 = 458)
+    #
+    # From there it was just a matter of projecting the next value enough times to arrive at
+    # the desired step amount.
     farm = Farm(lines)
     half = len(lines) // 2
     full = len(lines)
     reachable = reachable_plots(farm, (full * 3)+half)
-    times = (steps - half) // full
-    sequence = []
-    sequence.append(reachable[half])
-    sequence.append(reachable[full + half])
-    sequence.append(reachable[(full * 2) + half])
-    sequence.append(reachable[(full * 3) + half])
-    while len(sequence) <= times:
+    sequence = [reachable[half], reachable[full + half], 
+                reachable[(full * 2) + half], reachable[(full * 3) + half]]
+    s = (full * 3) + half
+    while s < steps:
         sequence.append(next_value(sequence[-4:]))
+        s += full
     return sequence[-1]
 
 class Farm:
@@ -38,7 +60,6 @@ class Farm:
                 if col == "#":
                     self.rocks.add((x,y))
 
-    @functools.lru_cache(maxsize=5000)
     def moves_from(self, current: tuple[int]) -> list[tuple[int]]:
         """possible moves in one step from a location"""
         x = current[0]
@@ -58,6 +79,11 @@ class Farm:
 
 def reachable_plots(farm: Farm, steps: int) -> dict:
     """determine the plots reachable in a number of steps"""
+    # adjusted this for a bit better performance on higher step
+    # counts to use a queue approach to not recalculate steps
+    # again. trick was to know that odd and even steps roll into
+    # one another.  using a dictionary to avoid redoing calculations
+    # for several different step points.
     reached = {}
     q = []
     visited = set()
